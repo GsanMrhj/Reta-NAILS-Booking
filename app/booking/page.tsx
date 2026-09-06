@@ -1,91 +1,92 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 
-// تهيئة الاتصال بقاعدة البيانات باستخدام المفاتيح التي رفعناها لـ Vercel
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 export default function BookingPage() {
+  const router = useRouter();
   const [slots, setSlots] = useState<any[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   
-  // حالات واجهة المستخدم
   const [loading, setLoading] = useState(true);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpCode, setOtpCode] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState("");
 
-  // جلب الأوقات المتاحة من قاعدة البيانات عند فتح الصفحة
   useEffect(() => {
     async function fetchSlots() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("available_slots")
         .select("*")
-        .eq("is_booked", false) // جلب الأوقات غير المحجوزة فقط
+        .eq("is_booked", false)
         .order("date_time", { ascending: true });
-
       if (data) setSlots(data);
       setLoading(false);
     }
     fetchSlots();
   }, []);
 
-  // دالة طلب الحجز (إرسال البيانات لـ Supabase وتجهيز الواتساب)
   const handleBookingRequest = async () => {
     if (!name || !phone || !selectedSlot) {
-      alert("الرجاء تعبئة جميع البيانات واختيار وقت!");
+      alert("الرجاء تعبئة الاسم والرقم واختيار موعد!");
       return;
     }
-
-    // هنا سيتم لاحقاً دمج كود إرسال الواتساب
-    // حالياً ننتقل لشاشة إدخال الرمز السري
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setGeneratedOtp(code);
+    alert(`📱 (رسالة SMS)\nرمز التأكيد: ${code}`);
     setShowOtpInput(true);
   };
 
-  // دالة تأكيد الرمز السري
   const handleVerifyOtp = async () => {
-    if (otpCode.length < 4) {
-      alert("الرجاء إدخال الرمز الصحيح");
+    if (otpCode !== generatedOtp) {
+      alert("❌ الرمز خاطئ، الرجاء المحاولة مرة أخرى!");
       return;
     }
-    alert("تم تأكيد الحجز بنجاح! سيتم إضافته للوحة تحكم ريتا.");
-    // سيتم تحديث حالة الجدول إلى محجوز في الخطوة القادمة
-    setShowOtpInput(false);
+    const { error: insertError } = await supabase.from("bookings").insert([{
+      customer_name: name, customer_phone: phone, slot_id: selectedSlot, status: 'confirmed'
+    }]);
+    if (insertError) return alert("حدث خطأ أثناء الحجز.");
+    
+    await supabase.from("available_slots").update({ is_booked: true }).eq("id", selectedSlot);
+    alert("✅ تم تأكيد حجزك بنجاح!");
+    router.push("/");
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-pink-600 text-xl font-bold">جاري تحميل الأوقات المتاحة...</div>;
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-yellow-500 font-bold text-xl">جاري تحميل الأوقات...</div>;
 
   return (
-    <main dir="rtl" className="min-h-screen bg-pink-50 p-6 flex flex-col items-center justify-center font-sans">
-      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-xl border-t-8 border-pink-400">
-        <h1 className="text-3xl font-bold text-pink-600 mb-8 text-center">احجزي موعدك 💅</h1>
+    <main dir="rtl" className="min-h-screen bg-black p-6 flex flex-col items-center justify-center font-sans">
+      <div className="bg-gray-900 p-8 rounded-3xl shadow-[0_0_30px_rgba(212,175,55,0.1)] w-full max-w-xl border-t-4 border-yellow-500">
+        <h1 className="text-3xl font-bold text-yellow-500 mb-8 text-center">احجزي موعدك 💅</h1>
         
         {!showOtpInput ? (
           <>
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">1. اختاري الوقت المناسب:</h2>
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">1. اختاري الوقت المناسب:</h2>
               {slots.length === 0 ? (
-                <p className="text-gray-500 bg-gray-100 p-4 rounded-xl text-center">عذراً، لا يوجد أوقات متاحة حالياً. يرجى المحاولة لاحقاً.</p>
+                <p className="text-gray-400 bg-gray-800 p-4 rounded-xl text-center border border-gray-700">لا يوجد أوقات متاحة حالياً.</p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {slots.map((slot) => {
                     const dateObj = new Date(slot.date_time);
                     return (
                       <button
-                        key={slot.id}
-                        onClick={() => setSelectedSlot(slot.id)}
-                        className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                        key={slot.id} onClick={() => setSelectedSlot(slot.id)}
+                        className={`p-4 rounded-xl border transition-all ${
                           selectedSlot === slot.id 
-                            ? "border-pink-500 bg-pink-50 text-pink-700 font-bold shadow-md" 
-                            : "border-gray-200 text-gray-600 hover:border-pink-300"
+                          ? "border-yellow-500 bg-yellow-500/10 text-yellow-400 font-bold shadow-[0_0_10px_rgba(212,175,55,0.2)]" 
+                          : "border-gray-700 text-gray-400 hover:border-yellow-500/50 bg-gray-800"
                         }`}
                       >
                         <div className="text-lg">{dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>
-                        <div className="text-sm text-gray-500">{dateObj.toLocaleDateString('ar-EG', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+                        <div className="text-sm">{dateObj.toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
                       </button>
                     );
                   })}
@@ -93,47 +94,43 @@ export default function BookingPage() {
               )}
             </div>
 
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-700 mb-4">2. معلوماتك لتأكيد الحجز:</h2>
-              <input 
-                type="text" placeholder="الاسم الكريم" 
-                value={name} onChange={(e) => setName(e.target.value)}
-                className="w-full p-4 mb-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 text-right"
-              />
-              <input 
-                type="tel" placeholder="رقم الواتساب (مثال: 05xxxxxxx)" 
-                value={phone} onChange={(e) => setPhone(e.target.value)}
-                className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-400 text-right"
-              />
+            <div className="mb-8 space-y-4">
+              <h2 className="text-xl font-semibold text-gray-300 mb-2">2. معلوماتك لتأكيد الحجز:</h2>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">الاسم الكريم:</label>
+                <input 
+                  type="text" placeholder="اكتبي اسمك هنا..." value={name} onChange={(e) => setName(e.target.value)} 
+                  className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-yellow-500 text-white placeholder-gray-500 text-right"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">رقم الهاتف (الواتساب):</label>
+                <input 
+                  type="tel" placeholder="مثال: 05xxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} 
+                  className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-yellow-500 text-white placeholder-gray-500 text-right text-left-dir"
+                />
+              </div>
             </div>
 
             <button 
-              onClick={handleBookingRequest}
-              disabled={!selectedSlot}
-              className="w-full bg-pink-500 hover:bg-pink-600 disabled:bg-gray-300 text-white font-bold text-xl py-4 rounded-xl transition-all shadow-lg hover:shadow-xl"
+              onClick={handleBookingRequest} disabled={!selectedSlot} 
+              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 text-black font-bold py-4 rounded-xl transition-all shadow-lg text-lg"
             >
               تأكيد الموعد
             </button>
           </>
         ) : (
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">تأكيد رقم الواتساب 💬</h2>
-            <p className="text-gray-600 mb-6">أرسلنا رمز تأكيد للرقم {phone}</p>
+            <h2 className="text-2xl font-bold text-yellow-500 mb-4">تأكيد رقم الهاتف 💬</h2>
+            <p className="text-gray-400 mb-6">الرجاء إدخال الرمز المكون من 4 أرقام الذي ظهر لك.</p>
             <input 
-              type="text" placeholder="أدخلي الرمز هنا" maxLength={4}
-              value={otpCode} onChange={(e) => setOtpCode(e.target.value)}
-              className="w-full p-4 mb-6 border-2 border-pink-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 text-center text-2xl tracking-widest font-bold"
+              type="text" placeholder="----" maxLength={4} value={otpCode} onChange={(e) => setOtpCode(e.target.value)} 
+              className="w-full p-4 mb-6 bg-gray-800 border-2 border-gray-700 focus:border-yellow-500 rounded-xl text-center text-3xl tracking-widest font-bold text-white placeholder-gray-600 outline-none"
             />
-            <button 
-              onClick={handleVerifyOtp}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-bold text-xl py-4 rounded-xl transition-all shadow-lg"
-            >
+            <button onClick={handleVerifyOtp} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg text-lg">
               تأكيد الحجز النهائي
             </button>
-            <button 
-              onClick={() => setShowOtpInput(false)}
-              className="w-full mt-4 text-gray-500 hover:text-gray-700 underline"
-            >
+            <button onClick={() => setShowOtpInput(false)} className="w-full mt-4 text-gray-400 hover:text-yellow-500 underline">
               تعديل الرقم أو الوقت
             </button>
           </div>
