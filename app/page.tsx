@@ -1,10 +1,11 @@
+"use client";
 import Link from "next/link";
 
 export default function Home() {
   return (
     <main dir="rtl" className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
       
-      {/* خلفية جمالية متحركة خفيفة (إضاءات ذهبية خافتة بالخلفية) */}
+      {/* خلفية جمالية متحركة خفيفة */}
       <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-600/10 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -50,11 +51,10 @@ export default function Home() {
         </Link>
       </div>
 
-      {/* أزرار التواصل الثابتة (واتساب وانستجرام) */}
+      {/* أزرار التواصل الثابتة */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
-        {/* زر الواتساب */}
         <a 
-          href="https://wa.me/+972556860522" // استبدل الرقم برقم ريتا الحقيقي مع الرمز الدولي
+          href="https://wa.me/972500000000" 
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 bg-green-600 hover:bg-green-500 text-white rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 text-2xl"
@@ -62,9 +62,8 @@ export default function Home() {
         >
           💬
         </a>
-        {/* زر الانستجرام */}
         <a 
-          href="https://instagram.com/reta.nails.1" // استبدل الرابط برابط حساب ريتا
+          href="https://instagram.com/retanails" 
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-700 hover:opacity-90 text-white rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 text-2xl"
