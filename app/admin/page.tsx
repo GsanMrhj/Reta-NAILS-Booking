@@ -18,13 +18,16 @@ export default function AdminPage() {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [selectedDaySlots, setSelectedDaySlots] = useState<any[]>([]);
   
+  // الأدوار المحددة للحذف الجماعي
+  const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
+
   const [newTime, setNewTime] = useState("");
   const [uploading, setUploading] = useState(false);
 
   // إعدادات التوليد المخصص للشهر
-  const [genStart, setGenStart] = useState("10:00"); // وقت البداية الافتراضي
-  const [genEnd, setGenEnd] = useState("20:00");     // وقت النهاية الافتراضي
-  const [genInterval, setGenInterval] = useState(90);  // المدة بين الأدوار بالدقائق (90 دقيقة = ساعة ونص)
+  const [genStart, setGenStart] = useState("10:00");
+  const [genEnd, setGenEnd] = useState("20:00");
+  const [genInterval, setGenInterval] = useState(90);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -70,6 +73,7 @@ export default function AdminPage() {
     
     setSelectedDateStr(dateStr);
     setSelectedDaySlots(slots.filter(s => s.date_time.startsWith(dateStr)));
+    setSelectedSlotIds([]); // إعادة تعيين التحديدات عند تغيير اليوم
   };
 
   async function handleAddSlotForDay() {
@@ -92,7 +96,48 @@ export default function AdminPage() {
     fetchSlots();
   }
 
-  // توليد الشهر حسب اختيار ريتا (ساعة البدء، ساعة النهاية، والفاصل الزمني)
+  // تحديد / إلغاء تحديد دور معين
+  const toggleSlotSelection = (id: string) => {
+    if (selectedSlotIds.includes(id)) {
+      setSelectedSlotIds(selectedSlotIds.filter(item => item !== id));
+    } else {
+      setSelectedSlotIds([...selectedSlotIds, id]);
+    }
+  };
+
+  // حذف الأدوار المحددة فقط
+  async function handleDeleteSelectedSlots() {
+    if (selectedSlotIds.length === 0) return alert("الرجاء تحديد دور واحد على الأقل للحذف!");
+    if (!confirm(`هل أنت متأكدة من حذف ${selectedSlotIds.length} دور المحددة؟`)) return;
+
+    const { error } = await supabase.from("available_slots").delete().in("id", selectedSlotIds);
+    if (!error) {
+      setSelectedSlotIds([]);
+      fetchSlots();
+      alert("✨ تم حذف الأدوار المحددة بنجاح!");
+    } else {
+      alert("حدث خطأ أثناء الحذف.");
+    }
+  }
+
+  // حذف كافة أدوار هذا اليوم دفعة واحدة
+  async function handleDeleteAllForDay() {
+    if (!selectedDateStr) return;
+    const idsToDelete = selectedDaySlots.map(s => s.id);
+    if (idsToDelete.length === 0) return alert("لا توجد أدوار في هذا اليوم للحذف.");
+    
+    if (!confirm(`هل أنت متأكدة من حذف كافة أدوار يوم ${selectedDateStr}؟`)) return;
+
+    const { error } = await supabase.from("available_slots").delete().in("id", idsToDelete);
+    if (!error) {
+      setSelectedSlotIds([]);
+      fetchSlots();
+      alert(`✨ تم حذف كافة أدوار يوم ${selectedDateStr} بنجاح!`);
+    } else {
+      alert("حدث خطأ أثناء الحذف.");
+    }
+  }
+
   async function handleCustomGenerateMonthSlots() {
     const totalDays = new Date(year, month + 1, 0).getDate();
     
@@ -192,7 +237,7 @@ export default function AdminPage() {
             onClick={() => { 
               if (password === "reta2026") {
                 setIsAuthenticated(true);
-                alert("👑 تاج راسك غسونه ابن عبوره✨");
+                alert("👑 تاج راسك غسونه ابن عبوره هه ✨");
               } else {
                 alert("خطأ!");
               }
@@ -296,8 +341,23 @@ export default function AdminPage() {
             
             <div className="flex gap-3 mb-6">
               <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
-              <button onClick={handleAddSlotForDay} className="bg-white text-black font-bold px-6 py-3 rounded-xl hover:bg-gray-200">＋ إضافة دور جديد لهذا اليوم</button>
+              <button onClick={handleAddSlotForDay} className="bg-white text-black font-bold px-6 py-3 rounded-xl hover:bg-gray-200">＋ إضافة دور جديد</button>
             </div>
+
+            {/* أزرار الحذف الجماعي (حذف المحددة أو حذف الكل لهذا اليوم) */}
+            {selectedDaySlots.length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-6 p-4 bg-neutral-900 border border-neutral-800 rounded-xl justify-between items-center">
+                <span className="text-sm text-gray-300">الأدوار المحددة للحذف: {selectedSlotIds.length}</span>
+                <div className="flex gap-2">
+                  <button onClick={handleDeleteSelectedSlots} className="bg-red-900 hover:bg-red-800 text-white text-xs font-bold px-4 py-2 rounded-lg">
+                    🗑️ حذف المحددة
+                  </button>
+                  <button onClick={handleDeleteAllForDay} className="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-4 py-2 rounded-lg">
+                    ⚠️ حذف كافة أدوار هذا اليوم
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               {selectedDaySlots.length === 0 ? (
@@ -305,14 +365,22 @@ export default function AdminPage() {
               ) : (
                 selectedDaySlots.map(slot => {
                   const timeStr = new Date(slot.date_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                  const isChecked = selectedSlotIds.includes(slot.id);
                   return (
-                    <div key={slot.id} className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex flex-col gap-2">
+                    <div key={slot.id} className={`p-4 rounded-xl border transition-all flex flex-col gap-2 ${isChecked ? 'bg-neutral-800 border-yellow-500' : 'bg-neutral-900 border-neutral-800'}`}>
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
+                          {/* مربع التحديد */}
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={() => toggleSlotSelection(slot.id)}
+                            className="w-5 h-5 accent-yellow-500 cursor-pointer"
+                          />
                           <span className="font-bold text-lg text-white">{timeStr}</span>
                           {slot.is_booked ? <span className="bg-white text-black font-extrabold text-xs px-2.5 py-1 rounded">محجوز 🔒</span> : <span className="bg-neutral-800 text-gray-300 text-xs px-2.5 py-1 rounded">متاح ✅</span>}
                         </div>
-                        <button onClick={() => handleDeleteSlot(slot.id)} className="bg-neutral-800 hover:bg-red-950 hover:text-red-400 text-xs px-3 py-1.5 rounded-lg font-bold">إلغاء / حذف الدور</button>
+                        <button onClick={() => handleDeleteSlot(slot.id)} className="bg-neutral-800 hover:bg-red-950 hover:text-red-400 text-xs px-3 py-1.5 rounded-lg font-bold">حذف فردي</button>
                       </div>
 
                       {slot.is_booked && slot.bookings && slot.bookings.length > 0 && (
@@ -332,10 +400,10 @@ export default function AdminPage() {
 
         {/* رفع الصور مباشرة من الهاتف أو الجهاز */}
         <div className="bg-black border border-neutral-800 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-4">📸 رفع صور أشغال رتوش اخت غسونهه ههههه </h2>
+          <h2 className="text-lg font-bold mb-4">📸 رفع صور أشغال ريتا </h2>
           <div className="mb-4">
             <label className="block w-full border-2 border-dashed border-neutral-700 hover:border-white p-6 rounded-xl text-center cursor-pointer bg-neutral-900 transition-all">
-              <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك  📁</span>
+              <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك   📁</span>
               <span className="text-gray-500 text-xs">يدعم JPG, PNG بكل الأحجام</span>
               <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
             </label>
