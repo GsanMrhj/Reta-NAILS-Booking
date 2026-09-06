@@ -7,10 +7,11 @@ export default function Home() {
         
         {/* قسم اللوجو */}
         <div className="mb-6 flex justify-center">
-          <div className="w-32 h-32 rounded-full border-2 border-yellow-500 p-1 overflow-hidden bg-black flex items-center justify-center">
-            {/* تأكد إن اسم الصورة بالمجلد public هو logo.png أو عدل الامتداد هنا */}
-            <img src="/logo.jpg" alt="لوجو صالون ريتا" className="w-full h-full object-cover rounded-full" 
-                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<span class="text-5xl">👑</span>'; }} 
+          <div className="w-32 h-32 rounded-full border-2 border-yellow-500 p-1 overflow-hidden bg-black flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+            <img 
+              src="/logo.jpg" 
+              alt="لوجو صالون ريتا" 
+              className="w-full h-full object-cover rounded-full" 
             />
           </div>
         </div>
