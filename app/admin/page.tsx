@@ -44,10 +44,40 @@ export default function AdminPage() {
     if (data) setGallery(data);
   }
 
+  // إضافة موعد فردي
   async function handleAddSlot() {
     if (!newDate || !newTime) return alert("اختر التاريخ والوقت");
     const { error } = await supabase.from("available_slots").insert([{ date_time: `${newDate}T${newTime}:00` }]);
-    if (!error) { setNewDate(""); setNewTime(""); fetchSlots(); }
+    if (!error) { setNewDate(""); setNewTime(""); fetchSlots(); alert("تمت إضافة الموعد بنجاح!"); }
+  }
+
+  // ميزة زر توليد أوقات الشهر افتراضياً (من 10 الصبح لـ 8 بالليل، كل ساعة ونص)
+  async function handleGenerateMonthSlots() {
+    const year = new Date().getFullYear();
+    const month = new Date().getMonth(); // الشهر الحالي
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    
+    // الأوقات الثابتة (بين كل دور ودور ساعة ونص)
+    const times = ["10:00", "11:30", "13:00", "14:30", "16:00", "17:30", "19:00", "20:30"];
+    
+    let newSlotsArray = [];
+    for (let day = 1; day <= totalDays; day++) {
+      const mStr = String(month + 1).padStart(2, '0');
+      const dStr = String(day).padStart(2, '0');
+      const dateStr = `${year}-${mStr}-${dStr}`;
+
+      for (const t of times) {
+        newSlotsArray.push({ date_time: `${dateStr}T${t}:00`, is_booked: false });
+      }
+    }
+
+    const { error } = await supabase.from("available_slots").insert(newSlotsArray);
+    if (error) {
+      alert("حدث خطأ أثناء التوليد التلقائي.");
+    } else {
+      alert("✨ تم توليد مواعيد الشهر بالكامل بنجاح (من 10 صباحاً لـ 8:30 مساءً كل ساعة ونص)!");
+      fetchSlots();
+    }
   }
 
   async function handleDeleteSlot(id: string) {
@@ -57,7 +87,7 @@ export default function AdminPage() {
   }
 
   async function handleAddGalleryImage() {
-    if (!newImgUrl) return alert("الرجاء إدخال رابط الصورة (Image URL)");
+    if (!newImgUrl) return alert("الرجاء إدخال رابط الصورة");
     const { error } = await supabase.from("gallery").insert([{ image_url: newImgUrl }]);
     if (!error) { setNewImgUrl(""); fetchGallery(); alert("تمت إضافة الصورة بنجاح!"); }
   }
@@ -102,9 +132,18 @@ export default function AdminPage() {
           <button onClick={() => setIsAuthenticated(false)} className="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm">خروج</button>
         </div>
         
-        {/* 1. إضافة موعد */}
+        {/* زر التوليد التلقائي لشهر كامل */}
+        <div className="bg-neutral-800 border border-yellow-500/50 p-6 rounded-xl mb-8 text-center">
+          <h2 className="text-lg font-bold mb-2 text-yellow-400">✨ توليد مواعيد الشهر تلقائياً</h2>
+          <p className="text-gray-300 text-sm mb-4">إنشاء مواعيد لكل أيام الشهر الحالي من الساعة 10:00 صباحاً حتى 8:30 مساءً (بين كل دور ساعة ونصف).</p>
+          <button onClick={handleGenerateMonthSlots} className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl shadow-md">
+            توليد جدول الشهر بالكامل 🚀
+          </button>
+        </div>
+
+        {/* إضافة موعد فردي */}
         <div className="bg-black border border-neutral-800 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-4">➕ إضافة أوقات جديدة (شهري/أسبوعي)</h2>
+          <h2 className="text-lg font-bold mb-4">➕ إضافة موعد مخصص</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
             <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
@@ -112,7 +151,7 @@ export default function AdminPage() {
           <button onClick={handleAddSlot} className="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200">إضافة الموعد</button>
         </div>
 
-        {/* 2. إدارة صور المعرض */}
+        {/* إدارة صور المعرض */}
         <div className="bg-black border border-neutral-800 p-6 rounded-xl mb-8">
           <h2 className="text-lg font-bold mb-4">📸 إضافة صور لمعرض الأعمال</h2>
           <div className="flex gap-3 mb-4">
@@ -129,9 +168,9 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 3. جدول المواعيد والحجوزات (مع تفاصيل الخدمة) */}
+        {/* جدول المواعيد */}
         <div className="mb-10">
-          <h2 className="text-xl font-bold mb-4">📅 جدول المواعيد والحجوزات ({slots.length})</h2>
+          <h2 className="text-xl font-bold mb-4">📅 جدول المواعيد ({slots.length})</h2>
           <div className="space-y-4">
             {slots.map(slot => {
               const d = new Date(slot.date_time);
@@ -159,11 +198,11 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* 4. قائمة الانتظار (Waiting List) */}
+        {/* قائمة الانتظار */}
         <div>
-          <h2 className="text-xl font-bold mb-4">📋 قائمة الانتظار (Waiting List) ({waitingList.length})</h2>
+          <h2 className="text-xl font-bold mb-4">📋 قائمة الانتظار ({waitingList.length})</h2>
           {waitingList.length === 0 ? (
-            <p className="text-gray-500 bg-black p-4 rounded-xl border border-neutral-800 text-center">لا توجد طلبات في قائمة الانتظار حالياً.</p>
+            <p className="text-gray-500 bg-black p-4 rounded-xl border border-neutral-800 text-center">لا توجد طلبات في قائمة الانتظار.</p>
           ) : (
             <div className="space-y-3">
               {waitingList.map(item => (

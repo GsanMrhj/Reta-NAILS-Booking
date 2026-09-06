@@ -23,17 +23,31 @@ export default function Home() {
   return (
     <main dir="rtl" className="min-h-screen bg-black text-white flex flex-col items-center justify-between p-6 relative overflow-hidden font-sans">
       
-      {/* خلفية مليئة بالإيموجيز واللمعات المتنوعة */}
-      <div className="absolute inset-0 opacity-25 pointer-events-none overflow-hidden select-none">
-        <span className="absolute top-[5%] left-[10%] text-3xl animate-bounce">🎀</span>
-        <span className="absolute top-[15%] right-[15%] text-4xl animate-pulse">💅</span>
-        <span className="absolute top-[25%] left-[30%] text-2xl animate-spin">✨</span>
-        <span className="absolute top-[40%] right-[10%] text-3xl animate-bounce">🎀</span>
-        <span className="absolute top-[55%] left-[5%] text-4xl animate-pulse">💅</span>
-        <span className="absolute top-[70%] right-[25%] text-2xl animate-spin">✨</span>
-        <span className="absolute top-[85%] left-[20%] text-3xl animate-bounce">🎀</span>
-        <span className="absolute top-[90%] right-[5%] text-4xl animate-pulse">💅</span>
-        <span className="absolute top-[30%] left-[80%] text-3xl animate-pulse">✨</span>
+      {/* خلفية غنية ومليئة بالإيموجيز واللمعات الفخمة المتنوعة */}
+      <div className="absolute inset-0 opacity-35 pointer-events-none overflow-hidden select-none text-2xl sm:text-3xl">
+        <span className="absolute top-[3%] left-[5%] animate-bounce">🎀</span>
+        <span className="absolute top-[8%] left-[25%] animate-pulse">✨</span>
+        <span className="absolute top-[5%] right-[10%] animate-bounce text-4xl">💅</span>
+        <span className="absolute top-[15%] right-[32%] animate-spin">💎</span>
+        <span className="absolute top-[22%] left-[12%] animate-pulse text-4xl">💖</span>
+        <span className="absolute top-[28%] right-[8%] animate-bounce text-3xl">👑</span>
+        <span className="absolute top-[35%] left-[20%] animate-spin">✨</span>
+        <span className="absolute top-[42%] right-[18%] animate-bounce text-4xl">🎀</span>
+        <span className="absolute top-[50%] left-[6%] animate-pulse text-4xl">💅</span>
+        <span className="absolute top-[58%] right-[12%] animate-spin">✨</span>
+        <span className="absolute top-[65%] left-[22%] animate-bounce text-4xl">💖</span>
+        <span className="absolute top-[72%] right-[28%] animate-pulse">💎</span>
+        <span className="absolute top-[80%] left-[15%] animate-bounce text-3xl">👑</span>
+        <span className="absolute top-[88%] right-[10%] animate-spin text-4xl">🎀</span>
+        <span className="absolute top-[95%] left-[30%] animate-pulse">💅</span>
+        
+        {/* الجانب الأيسر والأوسط إضافات مكثفة */}
+        <span className="absolute top-[12%] left-[45%] animate-pulse">💖</span>
+        <span className="absolute top-[25%] left-[55%] animate-bounce">🎀</span>
+        <span className="absolute top-[40%] left-[48%] animate-spin">✨</span>
+        <span className="absolute top-[60%] left-[52%] animate-bounce text-4xl">💅</span>
+        <span className="absolute top-[82%] left-[48%] animate-pulse">💎</span>
+        <span className="absolute top-[92%] left-[60%] animate-bounce">👑</span>
       </div>
 
       <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:24px_24px]"></div>
@@ -133,5 +147,3 @@ export default function Home() {
     </main>
   );
 }
-
-

@@ -1,4 +1,3 @@
-// app/booking/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -13,9 +12,11 @@ const supabase = createClient(
 export default function BookingPage() {
   const router = useRouter();
   const [slots, setSlots] = useState<any[]>([]);
-  const [selectedDate, setSelectedDate] = useState("");
+  const [currentDate, setCurrentDate] = useState(new Date()); // الشهر الحالي
+  const [selectedDaySlots, setSelectedDaySlots] = useState<any[]>([]);
+  const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  
+
   const servicesList = [
     "ميلوي (₪100)",
     "جيل مبنى انتومي (₪70)",
@@ -40,21 +41,40 @@ export default function BookingPage() {
   const [waitingNote, setWaitingNote] = useState("");
 
   useEffect(() => {
-    fetchAvailableSlots();
+    fetchSlots();
   }, []);
 
-  async function fetchAvailableSlots() {
+  async function fetchSlots() {
     const { data } = await supabase
       .from("available_slots")
       .select("*")
-      .eq("is_booked", false)
       .order("date_time", { ascending: true });
     if (data) setSlots(data);
     setLoading(false);
   }
 
-  const availableDates = Array.from(new Set(slots.map(s => s.date_time.split("T")[0])));
-  const slotsForSelectedDate = slots.filter(s => s.date_time.startsWith(selectedDate));
+  // حساب أيام الشهر الحالي
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth(); // 0-11
+  const firstDayIndex = new Date(year, month, 1).getDay(); // يوم البداية بالأسبوع
+  const totalDaysInMonth = new Date(year, month + 1, 0).getDate(); // عدد أيام الشهر
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthNamesAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+
+  // توليد تنسيق YYYY-MM-DD
+  const handleDayClick = (day: number) => {
+    const mStr = String(month + 1).padStart(2, '0');
+    const dStr = String(day).padStart(2, '0');
+    const dateStr = `${year}-${mStr}-${dStr}`;
+    
+    setSelectedDateStr(dateStr);
+    setSelectedSlot(null);
+
+    // تصفية الأوقات لهذا اليوم
+    const daySlots = slots.filter(s => s.date_time.startsWith(dateStr) && !s.is_booked);
+    setSelectedDaySlots(daySlots);
+  };
 
   const formatPhoneNumber = (num: string) => {
     let cleanNum = num.replace(/\D/g, '');
@@ -130,11 +150,12 @@ export default function BookingPage() {
         
         <div className="text-center mb-6">
           <Link href="/" className="text-yellow-400 text-sm hover:underline">← العودة للرئيسية</Link>
-          <h1 className="text-3xl font-bold text-yellow-500 mt-2">🎀 احجزي موعدكِ الملكي 🎀</h1>
+          <h1 className="text-3xl font-bold text-yellow-500 mt-2">🎀 احجزي دورك 🎀</h1>
         </div>
 
         {!showOtpInput && !showWaitingListForm ? (
           <>
+            {/* اختيار الخدمة */}
             <div className="mb-6">
               <label className="block text-gray-300 font-semibold mb-2">1. اختاري الخدمة المطلوبة:</label>
               <select 
@@ -148,58 +169,80 @@ export default function BookingPage() {
               </select>
             </div>
 
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-gray-300 mb-3">2. اختاري اليوم المتاح:</h2>
-              {availableDates.length === 0 ? (
-                <div className="text-center bg-black p-4 rounded-xl border border-neutral-800">
-                  <p className="text-gray-400 mb-3">لا توجد أيام متاحة حالياً في الجدول.</p>
-                  <button onClick={() => setShowWaitingListForm(true)} className="text-yellow-400 font-bold underline">
-                    📝 التسجيل في قائمة الانتظار (Waiting List)
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {availableDates.map(dateStr => (
+            {/* تقويم الشهر */}
+            <div className="mb-6 bg-black p-4 rounded-2xl border border-neutral-800">
+              <div className="flex justify-between items-center mb-4">
+                <button onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">‹</button>
+                <h2 className="text-lg font-bold text-yellow-400">{monthNamesAr[month]} {year}</h2>
+                <button onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">›</button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2 font-bold">
+                <span>أحد</span><span>إثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {Array.from({ length: firstDayIndex }).map((_, i) => (
+                  <div key={`empty-${i}`} />
+                ))}
+                {Array.from({ length: totalDaysInMonth }).map((_, i) => {
+                  const day = i + 1;
+                  const mStr = String(month + 1).padStart(2, '0');
+                  const dStr = String(day).padStart(2, '0');
+                  const dFull = `${year}-${mStr}-${dStr}`;
+                  const hasSlots = slots.some(s => s.date_time.startsWith(dFull) && !s.is_booked);
+                  const isSelected = selectedDateStr === dFull;
+
+                  return (
                     <button
-                      key={dateStr}
-                      onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }}
-                      className={`px-4 py-2.5 rounded-xl border font-bold transition-all ${
-                        selectedDate === dateStr 
-                        ? "bg-yellow-500 text-black border-yellow-400 shadow-lg" 
-                        : "bg-black text-gray-300 border-neutral-700 hover:border-yellow-500"
+                      key={day}
+                      onClick={() => handleDayClick(day)}
+                      disabled={!hasSlots}
+                      className={`h-10 rounded-xl font-bold transition-all text-sm flex items-center justify-center ${
+                        isSelected 
+                        ? "bg-yellow-500 text-black shadow-lg scale-105" 
+                        : hasSlots 
+                        ? "bg-neutral-800 text-yellow-400 border border-yellow-500/30 hover:border-yellow-500" 
+                        : "text-neutral-600 bg-neutral-950 cursor-not-allowed"
                       }`}
                     >
-                      {new Date(dateStr).toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {day}
                     </button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
 
-            {selectedDate && (
+            {/* الأوقات المتاحة لليوم المختار */}
+            {selectedDateStr && (
               <div className="mb-6">
-                <h3 className="text-md font-semibold text-yellow-400 mb-2">الأوقات المتاحة ليوم {selectedDate}:</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {slotsForSelectedDate.map(slot => {
-                    const timeStr = new Date(slot.date_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                    return (
-                      <button
-                        key={slot.id}
-                        onClick={() => setSelectedSlot(slot.id)}
-                        className={`p-3 rounded-xl border text-center transition-all ${
-                          selectedSlot === slot.id ? "bg-yellow-500/20 border-yellow-500 text-yellow-400 font-bold" : "bg-black border-neutral-800 text-gray-300"
-                        }`}
-                      >
-                        {timeStr}
-                      </button>
-                    );
-                  })}
-                </div>
+                <h3 className="text-md font-semibold text-yellow-400 mb-2">الأوقات المتاحة ليوم {selectedDateStr}:</h3>
+                {selectedDaySlots.length === 0 ? (
+                  <p className="text-gray-400 text-sm bg-neutral-950 p-3 rounded-xl">لا توجد مواعيد متاحة في هذا اليوم.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedDaySlots.map(slot => {
+                      const timeStr = new Date(slot.date_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <button
+                          key={slot.id}
+                          onClick={() => setSelectedSlot(slot.id)}
+                          className={`p-3 rounded-xl border text-center transition-all ${
+                            selectedSlot === slot.id ? "bg-yellow-500 text-black font-bold border-yellow-400" : "bg-black border-neutral-800 text-gray-300"
+                          }`}
+                        >
+                          {timeStr}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
+            {/* معلومات التواصل */}
             <div className="mb-6 space-y-3">
-              <h2 className="text-lg font-semibold text-gray-300">3. معلومات التواصل:</h2>
+              <h2 className="text-lg font-semibold text-gray-300">2. معلومات التواصل:</h2>
               <input 
                 type="text" placeholder="اسمك الكريم..." value={name} onChange={(e) => setName(e.target.value)} 
                 className="w-full p-3.5 bg-black border border-neutral-700 rounded-xl text-white outline-none focus:border-yellow-500"
@@ -220,7 +263,7 @@ export default function BookingPage() {
 
             <div className="mt-4 text-center">
               <button onClick={() => setShowWaitingListForm(true)} className="text-sm text-gray-400 hover:text-yellow-400 underline">
-                لا توجد ساعة مناسبة؟ انضمي لقائمة الانتظار 📋
+                قائمة الانتظار (Waiting List) 📋
               </button>
             </div>
           </>
@@ -236,7 +279,7 @@ export default function BookingPage() {
             <button onClick={handleJoinWaitingList} className="w-full bg-yellow-500 text-black font-bold py-3.5 rounded-xl shadow-lg">
               تسجيل في قائمة الانتظار ✨
             </button>
-            <button onClick={() => setShowWaitingListForm(false)} className="mt-4 text-sm text-gray-400 underline">العودة للحجز العادي</button>
+            <button onClick={() => setShowWaitingListForm(false)} className="mt-4 text-sm text-gray-400 underline">العودة للحجز</button>
           </div>
         ) : (
           <div className="text-center">
