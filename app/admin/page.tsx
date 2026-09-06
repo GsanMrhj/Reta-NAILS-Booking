@@ -245,7 +245,7 @@ export default function AdminPage() {
           </div>
 
           <button onClick={handleCustomGenerateMonthSlots} className="w-full bg-white text-black font-bold py-3.5 rounded-xl shadow-md hover:bg-gray-200">
-            توليد جدول الشهر بالكامل حسب إعداداتك 🚀
+            انشاء جدول الشهر بالكامل حسب إعداداتك 🚀
           </button>
         </div>
 
@@ -332,7 +332,7 @@ export default function AdminPage() {
 
         {/* رفع الصور مباشرة من الهاتف أو الجهاز */}
         <div className="bg-black border border-neutral-800 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-4">📸 رفع صور أعمال رتوش اخت غسونهه ههههه (من الهاتف)</h2>
+          <h2 className="text-lg font-bold mb-4">📸 رفع صور أشغال رتوش اخت غسونهه ههههه </h2>
           <div className="mb-4">
             <label className="block w-full border-2 border-dashed border-neutral-700 hover:border-white p-6 rounded-xl text-center cursor-pointer bg-neutral-900 transition-all">
               <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك  📁</span>
