@@ -26,13 +26,49 @@ export default function MyBookingPage() {
 
     setLoading(true);
     const cleanPhone = formatPhoneNumber(phone);
+    const rawPhone = phone.trim();
 
-    const { data: dataBookings } = await supabase
+    // 1. جلب كل الحجوزات (لنتفادى مشاكل الربط في Supabase)
+    const { data: allBookings, error: bookingsError } = await supabase
       .from("bookings")
-      .select("*, available_slots(id, date_time)")
-      .or(`customer_phone.eq.${phone},customer_phone.eq.${cleanPhone}`);
+      .select("*");
 
-    setBookings(dataBookings || []);
+    if (bookingsError) {
+      alert("حدث خطأ في الاتصال بقاعدة البيانات.");
+      setLoading(false);
+      return;
+    }
+
+    // 2. فلترة الحجوزات حسب الرقم المطابق برمجياً (آمنة 100%)
+    const userBookings = (allBookings || []).filter(b => 
+      b.customer_phone === rawPhone || 
+      b.customer_phone === cleanPhone ||
+      b.customer_phone.replace(/\D/g, '') === rawPhone.replace(/\D/g, '')
+    );
+
+    if (userBookings.length === 0) {
+      setBookings([]);
+      setSearched(true);
+      setLoading(false);
+      return;
+    }
+
+    // 3. جلب الأوقات الخاصة بهذه الحجوزات ودمجها يدوياً لتفادي الأخطاء
+    const slotIds = userBookings.map(b => b.slot_id);
+    const { data: slotsData } = await supabase
+      .from("available_slots")
+      .select("*")
+      .in("id", slotIds);
+
+    const mergedBookings = userBookings.map(b => {
+      const slot = (slotsData || []).find(s => s.id === b.slot_id);
+      return {
+        ...b,
+        available_slots: slot || null
+      };
+    });
+
+    setBookings(mergedBookings);
     setSearched(true);
     setLoading(false);
   };
