@@ -12,7 +12,7 @@ const supabase = createClient(
 export default function BookingPage() {
   const router = useRouter();
   const [slots, setSlots] = useState<any[]>([]);
-  const [currentDate, setCurrentDate] = useState(new Date()); // الشهر الحالي
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDaySlots, setSelectedDaySlots] = useState<any[]>([]);
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -53,16 +53,13 @@ export default function BookingPage() {
     setLoading(false);
   }
 
-  // حساب أيام الشهر الحالي
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth(); // 0-11
-  const firstDayIndex = new Date(year, month, 1).getDay(); // يوم البداية بالأسبوع
-  const totalDaysInMonth = new Date(year, month + 1, 0).getDate(); // عدد أيام الشهر
+  const month = currentDate.getMonth(); 
+  const firstDayIndex = new Date(year, month, 1).getDay(); 
+  const totalDaysInMonth = new Date(year, month + 1, 0).getDate(); 
 
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const monthNamesAr = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+  const monthNamesEn = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-  // توليد تنسيق YYYY-MM-DD
   const handleDayClick = (day: number) => {
     const mStr = String(month + 1).padStart(2, '0');
     const dStr = String(day).padStart(2, '0');
@@ -71,7 +68,6 @@ export default function BookingPage() {
     setSelectedDateStr(dateStr);
     setSelectedSlot(null);
 
-    // تصفية الأوقات لهذا اليوم
     const daySlots = slots.filter(s => s.date_time.startsWith(dateStr) && !s.is_booked);
     setSelectedDaySlots(daySlots);
   };
@@ -155,7 +151,6 @@ export default function BookingPage() {
 
         {!showOtpInput && !showWaitingListForm ? (
           <>
-            {/* اختيار الخدمة */}
             <div className="mb-6">
               <label className="block text-gray-300 font-semibold mb-2">1. اختاري الخدمة المطلوبة:</label>
               <select 
@@ -169,16 +164,16 @@ export default function BookingPage() {
               </select>
             </div>
 
-            {/* تقويم الشهر */}
+            {/* تقويم الشهر بالأرقام الإنجليزية */}
             <div className="mb-6 bg-black p-4 rounded-2xl border border-neutral-800">
               <div className="flex justify-between items-center mb-4">
                 <button onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">‹</button>
-                <h2 className="text-lg font-bold text-yellow-400">{monthNamesAr[month]} {year}</h2>
+                <h2 className="text-lg font-bold text-yellow-400">{monthNamesEn[month]} {year}</h2>
                 <button onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">›</button>
               </div>
 
               <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2 font-bold">
-                <span>أحد</span><span>إثنين</span><span>ثلاثاء</span><span>أربعاء</span><span>خميس</span><span>جمعة</span><span>سبت</span>
+                <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
               </div>
 
               <div className="grid grid-cols-7 gap-1 text-center">
@@ -213,7 +208,6 @@ export default function BookingPage() {
               </div>
             </div>
 
-            {/* الأوقات المتاحة لليوم المختار */}
             {selectedDateStr && (
               <div className="mb-6">
                 <h3 className="text-md font-semibold text-yellow-400 mb-2">الأوقات المتاحة ليوم {selectedDateStr}:</h3>
@@ -222,7 +216,7 @@ export default function BookingPage() {
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {selectedDaySlots.map(slot => {
-                      const timeStr = new Date(slot.date_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                      const timeStr = new Date(slot.date_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
                       return (
                         <button
                           key={slot.id}
@@ -240,7 +234,6 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* معلومات التواصل */}
             <div className="mb-6 space-y-3">
               <h2 className="text-lg font-semibold text-gray-300">2. معلومات التواصل:</h2>
               <input 
