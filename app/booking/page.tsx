@@ -48,6 +48,7 @@ export default function BookingPage() {
     const { data } = await supabase
       .from("available_slots")
       .select("*")
+      .eq("is_booked", false)
       .order("date_time", { ascending: true });
     if (data) setSlots(data);
     setLoading(false);
@@ -208,7 +209,7 @@ export default function BookingPage() {
               </div>
             </div>
 
-            {/* الأوقات المتاحة (نظام 24 ساعة) */}
+            {/* الأوقات المتاحة */}
             {selectedDateStr && (
               <div className="mb-6">
                 <h3 className="text-md font-semibold text-yellow-400 mb-2">الأوقات المتاحة ليوم {selectedDateStr}:</h3>
@@ -217,7 +218,7 @@ export default function BookingPage() {
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {selectedDaySlots.map(slot => {
-                      const timeStr = new Date(slot.date_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // نظام 24 ساعة
+                      const timeStr = slot.date_time.split('T')[1]?.substring(0, 5) || "";
                       return (
                         <button
                           key={slot.id}
