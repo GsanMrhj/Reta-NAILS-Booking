@@ -33,33 +33,63 @@ export default function BookingPage() {
     fetchSlots();
   }, []);
 
-  const handleBookingRequest = async () => {
+  // تنسيق رقم الهاتف ليناسب روابط الواتساب (للأرقام الإسرائيلية والمحلية)
+  const formatPhoneNumber = (num: string) => {
+    let cleanNum = num.replace(/\D/g, ''); // إزالة أي رموز أو مسافات
+    if (cleanNum.startsWith('0')) {
+      cleanNum = '972' + cleanNum.substring(1); // تحويل 05xxxxxxxx إلى 9725xxxxxxxx
+    }
+    return cleanNum;
+  };
+
+  // 1. طلب الحجز وتوليد كود الواتساب
+  const handleBookingRequest = () => {
     if (!name || !phone || !selectedSlot) {
-      alert("الرجاء تعبئة الاسم والرقم واختيار موعد!");
+      alert("الرجاء تعبئة الاسم ورقم الواتساب واختيار موعد!");
       return;
     }
+
+    // توليد كود سري من 4 أرقام
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     setGeneratedOtp(code);
-    alert(`📱 (رسالة SMS)\nرمز التأكيد: ${code}`);
+
+    const formattedPhone = formatPhoneNumber(phone);
+    const message = `مرحباً ${name}، رمز التأكيد الخاص بك لحجز موعد في صالون ريتا للأظافر هو: *${code}*`;
+    
+    // فتح رابط الواتساب الرسمي لإرسال الكود للزبونة
+    const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+
     setShowOtpInput(true);
   };
 
+  // 2. التحقق من الكود وتثبيت الحجز
   const handleVerifyOtp = async () => {
     if (otpCode !== generatedOtp) {
-      alert("❌ الرمز خاطئ، الرجاء المحاولة مرة أخرى!");
+      alert("❌ الرمز الذي أدخلته خاطئ، يرجى التأكد من رسالة الواتساب!");
       return;
     }
+
     const { error: insertError } = await supabase.from("bookings").insert([{
-      customer_name: name, customer_phone: phone, slot_id: selectedSlot, status: 'confirmed'
+      customer_name: name, 
+      customer_phone: phone, 
+      slot_id: selectedSlot, 
+      status: 'confirmed'
     }]);
-    if (insertError) return alert("حدث خطأ أثناء الحجز.");
+
+    if (insertError) {
+      alert("حدث خطأ أثناء حفظ الحجز بقاعدة البيانات.");
+      return;
+    }
     
+    // تحديث الموعد ليصبح محجوزاً
     await supabase.from("available_slots").update({ is_booked: true }).eq("id", selectedSlot);
-    alert("✅ تم تأكيد حجزك بنجاح!");
+
+    alert("✅ تم تأكيد حجزك بنجاح! ننتظرك في الصالون.");
     router.push("/");
   };
 
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-yellow-500 font-bold text-xl">جاري تحميل الأوقات...</div>;
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-yellow-500 font-bold text-xl">جاري التحميل...</div>;
 
   return (
     <main dir="rtl" className="min-h-screen bg-black p-6 flex flex-col items-center justify-center font-sans">
@@ -104,9 +134,9 @@ export default function BookingPage() {
                 />
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2">رقم الهاتف (الواتساب):</label>
+                <label className="block text-gray-400 text-sm mb-2">رقم الواتساب (مثال: 0501234567):</label>
                 <input 
-                  type="tel" placeholder="مثال: 05xxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} 
+                  type="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} 
                   className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-yellow-500 text-white placeholder-gray-500 text-right text-left-dir"
                 />
               </div>
@@ -116,19 +146,19 @@ export default function BookingPage() {
               onClick={handleBookingRequest} disabled={!selectedSlot} 
               className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 text-black font-bold py-4 rounded-xl transition-all shadow-lg text-lg"
             >
-              تأكيد الموعد
+              إرسال رمز التأكيد عبر الواتساب 💬
             </button>
           </>
         ) : (
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-yellow-500 mb-4">تأكيد رقم الهاتف 💬</h2>
-            <p className="text-gray-400 mb-6">الرجاء إدخال الرمز المكون من 4 أرقام الذي ظهر لك.</p>
+            <h2 className="text-2xl font-bold text-yellow-500 mb-4">أكّدي رمز الواتساب 💬</h2>
+            <p className="text-gray-400 mb-6">لقد فتحنا لك محادثة واتساب تحتوي على رمز التأكيد المكون من 4 أرقام. أدخليه هنا للمتابعة:</p>
             <input 
               type="text" placeholder="----" maxLength={4} value={otpCode} onChange={(e) => setOtpCode(e.target.value)} 
               className="w-full p-4 mb-6 bg-gray-800 border-2 border-gray-700 focus:border-yellow-500 rounded-xl text-center text-3xl tracking-widest font-bold text-white placeholder-gray-600 outline-none"
             />
             <button onClick={handleVerifyOtp} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg text-lg">
-              تأكيد الحجز النهائي
+              تأكيد الحجز النهائي ✅
             </button>
             <button onClick={() => setShowOtpInput(false)} className="w-full mt-4 text-gray-400 hover:text-yellow-500 underline">
               تعديل الرقم أو الوقت
