@@ -234,7 +234,7 @@ export default function AdminPage() {
             onClick={() => { 
               if (password === "reta2026") {
                 setIsAuthenticated(true);
-                alert("👑 تاج راسك غسونه ✨");
+                alert("👑 تاج راسك غسونه ابن عبوره ههههههه✨");
               } else {
                 alert("خطأ!");
               }
@@ -254,17 +254,17 @@ export default function AdminPage() {
         
         {/* رسالة فكاهية ترحيبية */}
         <div className="bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-yellow-600/20 border border-yellow-500/40 p-4 rounded-2xl mb-6 text-center shadow-lg">
-          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه 👑</p>
+          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه ههههههه👑</p>
         </div>
 
         <div className="flex justify-between items-center border-b border-neutral-800 pb-6 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">لوحة تحكم ريتا ⚡</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">لوحة تحكم رتووش  ⚡</h1>
           <button onClick={() => setIsAuthenticated(false)} className="bg-yellow-500 text-black px-4 py-2 rounded-xl font-bold text-sm">خروج</button>
         </div>
         
         {/* إعدادات توليد الشهر حسب اختيار ريتا */}
         <div className="bg-neutral-800 border border-yellow-500/30 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ توليد شهر كامل حسب اختيارك (نظام 24 ساعة)</h2>
+          <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ انشاء شهر كامل حسب اختيارك </h2>
           <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار (مثلاً من 10 إلى 22)، وسيتم تطبيقها على كل أيام الشهر الحالي تلقائياً:</p>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -287,7 +287,7 @@ export default function AdminPage() {
           </div>
 
           <button onClick={handleCustomGenerateMonthSlots} className="w-full bg-yellow-500 text-black font-extrabold py-3.5 rounded-xl shadow-md hover:bg-yellow-400">
-            توليد جدول الشهر بالكامل حسب إعداداتك 🚀
+            انشاء جدول الشهر بالكامل حسب إعداداتك 🚀
           </button>
         </div>
 
