@@ -17,7 +17,7 @@ export default function AdminPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   
-  // الحل الجذري: حساب أدوار اليوم مباشرة من القائمة الرئيسية لضمان التحديث الفوري
+  // التعديل السحري: حساب الأدوار لليوم المختار بشكل "مباشر" ومستمر من القائمة الأساسية
   const selectedDaySlots = selectedDateStr ? slots.filter(s => s.date_time.startsWith(selectedDateStr)) : [];
   
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
@@ -81,10 +81,19 @@ export default function AdminPage() {
     if (!selectedDateStr) return alert("الرجاء اختيار اليوم من التقويم أولاً!");
     const dateTimeString = `${selectedDateStr}T${newHour}:${newMinute}:00`;
     
-    const { error } = await supabase.from("available_slots").insert([{ date_time: dateTimeString }]);
-    if (!error) {
-      await fetchSlots(); // ننتظر حتى تتحدث المواعيد
-      setTimeout(() => alert("✨ تمت إضافة الدور بنجاح!"), 50); // تأخير بسيط لتظهر الإضافة في الشاشة قبل التنبيه
+    // الإضافة مع إرجاع البيانات فوراً لتحديث الشاشة بلحظتها
+    const { data, error } = await supabase
+      .from("available_slots")
+      .insert([{ date_time: dateTimeString }])
+      .select(`id, date_time, is_booked, bookings ( customer_name, customer_phone, service_name )`);
+      
+    if (!error && data) {
+      // تحديث الشاشة فوراً
+      setSlots(prev => {
+        const newSlots = [...prev, ...data];
+        return newSlots.sort((a, b) => a.date_time.localeCompare(b.date_time));
+      });
+      alert("✨ تمت إضافة الدور بنجاح!");
     } else {
       alert("حدث خطأ أثناء الإضافة.");
     }
@@ -92,8 +101,12 @@ export default function AdminPage() {
 
   async function handleDeleteSlot(id: string) {
     if (!confirm("هل أنت متأكدة من حذف هذا الدور؟")) return;
-    await supabase.from("available_slots").delete().eq("id", id);
-    fetchSlots();
+    
+    const { error } = await supabase.from("available_slots").delete().eq("id", id);
+    if (!error) {
+      // إخفاء الدور المحذوف فوراً من الشاشة
+      setSlots(prev => prev.filter(s => s.id !== id));
+    }
   }
 
   const toggleSlotSelection = (id: string) => {
@@ -110,9 +123,9 @@ export default function AdminPage() {
 
     const { error } = await supabase.from("available_slots").delete().in("id", selectedSlotIds);
     if (!error) {
+      setSlots(prev => prev.filter(s => !selectedSlotIds.includes(s.id)));
       setSelectedSlotIds([]);
-      await fetchSlots();
-      setTimeout(() => alert("✨ تم حذف الأدوار المحددة بنجاح!"), 50);
+      alert("✨ تم حذف الأدوار المحددة بنجاح!");
     } else {
       alert("حدث خطأ أثناء الحذف.");
     }
@@ -127,9 +140,9 @@ export default function AdminPage() {
 
     const { error } = await supabase.from("available_slots").delete().in("id", idsToDelete);
     if (!error) {
+      setSlots(prev => prev.filter(s => !idsToDelete.includes(s.id)));
       setSelectedSlotIds([]);
-      await fetchSlots();
-      setTimeout(() => alert(`✨ تم حذف كافة أدوار يوم ${selectedDateStr} بنجاح!`), 50);
+      alert(`✨ تم حذف كافة أدوار يوم ${selectedDateStr} بنجاح!`);
     } else {
       alert("حدث خطأ أثناء الحذف.");
     }
@@ -162,10 +175,17 @@ export default function AdminPage() {
       }
     }
 
-    const { error } = await supabase.from("available_slots").insert(newSlotsArray);
-    if (!error) {
-      await fetchSlots();
-      setTimeout(() => alert(`✨ تم توليد مواعيد الشهر كاملة حسب اختيارك بنجاح! (${monthNamesEn[month]})`), 50);
+    const { data, error } = await supabase
+      .from("available_slots")
+      .insert(newSlotsArray)
+      .select(`id, date_time, is_booked, bookings ( customer_name, customer_phone, service_name )`);
+      
+    if (!error && data) {
+      setSlots(prev => {
+        const newSlots = [...prev, ...data];
+        return newSlots.sort((a, b) => a.date_time.localeCompare(b.date_time));
+      });
+      alert(`✨ تم توليد مواعيد الشهر كاملة حسب اختيارك بنجاح! (${monthNamesEn[month]})`);
     } else {
       alert("حدث خطأ أثناء التوليد.");
     }
