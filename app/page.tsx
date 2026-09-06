@@ -121,7 +121,7 @@ export default function Home() {
 
       {/* معرض أعمال ريتا المتحرك (Moving Gallery Carousel) */}
       <div className="relative z-10 w-full max-w-6xl mx-auto mt-8 mb-16 overflow-hidden">
-        <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8 font-serif">📸 معرض أعمال ريتا الملكية</h2>
+        <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8 font-serif">📸 معرض أعمال ريتا </h2>
         {galleryImages.length === 0 ? (
           <p className="text-gray-500 text-center">قريباً سيتم رفع أحدث صور الأظافر هنا ✨</p>
         ) : (
