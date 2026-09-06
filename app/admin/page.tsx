@@ -24,7 +24,7 @@ export default function AdminPage() {
   const [newTime, setNewTime] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // إعدادات التوليد المخصص للشهر
+  // إعدادات التوليد المخصص للشهر (نظام 24 ساعة)
   const [genStart, setGenStart] = useState("10:00");
   const [genEnd, setGenEnd] = useState("20:00");
   const [genInterval, setGenInterval] = useState(90);
@@ -73,7 +73,7 @@ export default function AdminPage() {
     
     setSelectedDateStr(dateStr);
     setSelectedDaySlots(slots.filter(s => s.date_time.startsWith(dateStr)));
-    setSelectedSlotIds([]); // إعادة تعيين التحديدات عند تغيير اليوم
+    setSelectedSlotIds([]);
   };
 
   async function handleAddSlotForDay() {
@@ -96,7 +96,6 @@ export default function AdminPage() {
     fetchSlots();
   }
 
-  // تحديد / إلغاء تحديد دور معين
   const toggleSlotSelection = (id: string) => {
     if (selectedSlotIds.includes(id)) {
       setSelectedSlotIds(selectedSlotIds.filter(item => item !== id));
@@ -105,7 +104,6 @@ export default function AdminPage() {
     }
   };
 
-  // حذف الأدوار المحددة فقط
   async function handleDeleteSelectedSlots() {
     if (selectedSlotIds.length === 0) return alert("الرجاء تحديد دور واحد على الأقل للحذف!");
     if (!confirm(`هل أنت متأكدة من حذف ${selectedSlotIds.length} دور المحددة؟`)) return;
@@ -120,7 +118,6 @@ export default function AdminPage() {
     }
   }
 
-  // حذف كافة أدوار هذا اليوم دفعة واحدة
   async function handleDeleteAllForDay() {
     if (!selectedDateStr) return;
     const idsToDelete = selectedDaySlots.map(s => s.id);
@@ -226,23 +223,23 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <main dir="rtl" className="min-h-screen bg-black text-white flex items-center justify-center p-4 font-sans">
-        <div className="bg-neutral-900 border-2 border-white p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm">
-          <h1 className="text-2xl font-bold mb-2">لوحة تحكم ريتا 👑</h1>
+        <div className="bg-neutral-900 border-2 border-yellow-500 p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm">
+          <h1 className="text-2xl font-bold mb-2 text-yellow-400">لوحة تحكم ريتا 👑</h1>
           <p className="text-gray-400 mb-6 text-sm">أدخل كلمة المرور</p>
           <input 
             type="password" placeholder="كلمة السر..." value={password} onChange={(e) => setPassword(e.target.value)} 
-            className="w-full p-3 bg-black border-2 border-white rounded-xl mb-4 text-center text-white outline-none"
+            className="w-full p-3 bg-black border-2 border-yellow-500/50 rounded-xl mb-4 text-center text-white outline-none"
           />
           <button 
             onClick={() => { 
               if (password === "reta2026") {
                 setIsAuthenticated(true);
-                alert("👑 تاج راسك غسونه ابن عبوره هه ✨");
+                alert("👑 تاج راسك غسونه ✨");
               } else {
                 alert("خطأ!");
               }
             }} 
-            className="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200"
+            className="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl hover:bg-yellow-400"
           >
             دخول
           </button>
@@ -257,26 +254,26 @@ export default function AdminPage() {
         
         {/* رسالة فكاهية ترحيبية */}
         <div className="bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-yellow-600/20 border border-yellow-500/40 p-4 rounded-2xl mb-6 text-center shadow-lg">
-          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑هههههه تاج راسك غسونه 👑</p>
+          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه 👑</p>
         </div>
 
         <div className="flex justify-between items-center border-b border-neutral-800 pb-6 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold">لوحة تحكم ريتا ⚡</h1>
-          <button onClick={() => setIsAuthenticated(false)} className="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm">خروج</button>
+          <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">لوحة تحكم ريتا ⚡</h1>
+          <button onClick={() => setIsAuthenticated(false)} className="bg-yellow-500 text-black px-4 py-2 rounded-xl font-bold text-sm">خروج</button>
         </div>
         
         {/* إعدادات توليد الشهر حسب اختيار ريتا */}
-        <div className="bg-neutral-800 border border-white/40 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-3 text-white">✨ انشاء شهر كامل حسب اختيارك</h2>
-          <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار، وسيتم تطبيقها على كل أيام الشهر الحالي تلقائياً:</p>
+        <div className="bg-neutral-800 border border-yellow-500/30 p-6 rounded-xl mb-8">
+          <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ توليد شهر كامل حسب اختيارك (نظام 24 ساعة)</h2>
+          <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار (مثلاً من 10 إلى 22)، وسيتم تطبيقها على كل أيام الشهر الحالي تلقائياً:</p>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">يبدأ العمل الساعة:</label>
+              <label className="block text-xs text-gray-400 mb-1">يبدأ العمل الساعة (مثلاً 10:00):</label>
               <input type="time" value={genStart} onChange={(e) => setGenStart(e.target.value)} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1">ينتهي العمل الساعة:</label>
+              <label className="block text-xs text-gray-400 mb-1">ينتهي العمل الساعة (مثلاً 22:00):</label>
               <input type="time" value={genEnd} onChange={(e) => setGenEnd(e.target.value)} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
             </div>
             <div>
@@ -289,17 +286,17 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <button onClick={handleCustomGenerateMonthSlots} className="w-full bg-white text-black font-bold py-3.5 rounded-xl shadow-md hover:bg-gray-200">
-            انشاء جدول الشهر بالكامل حسب إعداداتك 🚀
+          <button onClick={handleCustomGenerateMonthSlots} className="w-full bg-yellow-500 text-black font-extrabold py-3.5 rounded-xl shadow-md hover:bg-yellow-400">
+            توليد جدول الشهر بالكامل حسب إعداداتك 🚀
           </button>
         </div>
 
         {/* تقويم ريتا التفاعلي */}
         <div className="bg-black p-6 rounded-2xl border border-neutral-800 mb-8">
           <div className="flex justify-between items-center mb-4">
-            <button onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }} className="text-white px-3 py-1 bg-neutral-900 rounded-lg">‹</button>
-            <h2 className="text-lg font-bold text-white">{monthNamesEn[month]} {year}</h2>
-            <button onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDateStr(null); }} className="text-white px-3 py-1 bg-neutral-900 rounded-lg">›</button>
+            <button onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">‹</button>
+            <h2 className="text-lg font-bold text-yellow-400">{monthNamesEn[month]} {year}</h2>
+            <button onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">›</button>
           </div>
 
           <div className="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2 font-bold">
@@ -323,8 +320,8 @@ export default function AdminPage() {
                   onClick={() => handleDayClick(day)}
                   className={`h-12 rounded-xl font-bold transition-all text-sm flex flex-col items-center justify-center ${
                     isSelected 
-                    ? "bg-white text-black shadow-lg scale-105" 
-                    : "bg-neutral-900 text-white border border-neutral-800 hover:border-white"
+                    ? "bg-yellow-500 text-black shadow-lg scale-105" 
+                    : "bg-neutral-900 text-yellow-400 border border-neutral-800 hover:border-yellow-500"
                   }`}
                 >
                   <span>{day}</span>
@@ -336,15 +333,15 @@ export default function AdminPage() {
 
         {/* إدارة أدوار اليوم المختار */}
         {selectedDateStr && (
-          <div className="bg-black border border-white/30 p-6 rounded-xl mb-8">
+          <div className="bg-black border border-yellow-500/30 p-6 rounded-xl mb-8">
             <h2 className="text-xl font-bold mb-4 text-white">إدارة أدوار يوم: <span className="text-yellow-400">{selectedDateStr}</span></h2>
             
             <div className="flex gap-3 mb-6">
               <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
-              <button onClick={handleAddSlotForDay} className="bg-white text-black font-bold px-6 py-3 rounded-xl hover:bg-gray-200">＋ إضافة دور جديد</button>
+              <button onClick={handleAddSlotForDay} className="bg-yellow-500 text-black font-bold px-6 py-3 rounded-xl hover:bg-yellow-400">＋ إضافة دور جديد</button>
             </div>
 
-            {/* أزرار الحذف الجماعي (حذف المحددة أو حذف الكل لهذا اليوم) */}
+            {/* أزرار الحذف الجماعي */}
             {selectedDaySlots.length > 0 && (
               <div className="flex flex-wrap gap-3 mb-6 p-4 bg-neutral-900 border border-neutral-800 rounded-xl justify-between items-center">
                 <span className="text-sm text-gray-300">الأدوار المحددة للحذف: {selectedSlotIds.length}</span>
@@ -364,21 +361,20 @@ export default function AdminPage() {
                 <p className="text-gray-400 text-sm">لا توجد أدوار مضافة في هذا اليوم.</p>
               ) : (
                 selectedDaySlots.map(slot => {
-                  const timeStr = new Date(slot.date_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                  const timeStr = new Date(slot.date_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // 24 ساعة
                   const isChecked = selectedSlotIds.includes(slot.id);
                   return (
                     <div key={slot.id} className={`p-4 rounded-xl border transition-all flex flex-col gap-2 ${isChecked ? 'bg-neutral-800 border-yellow-500' : 'bg-neutral-900 border-neutral-800'}`}>
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
-                          {/* مربع التحديد */}
                           <input 
                             type="checkbox" 
                             checked={isChecked} 
                             onChange={() => toggleSlotSelection(slot.id)}
                             className="w-5 h-5 accent-yellow-500 cursor-pointer"
                           />
-                          <span className="font-bold text-lg text-white">{timeStr}</span>
-                          {slot.is_booked ? <span className="bg-white text-black font-extrabold text-xs px-2.5 py-1 rounded">محجوز 🔒</span> : <span className="bg-neutral-800 text-gray-300 text-xs px-2.5 py-1 rounded">متاح ✅</span>}
+                          <span className="font-bold text-lg text-yellow-400">{timeStr}</span>
+                          {slot.is_booked ? <span className="bg-yellow-500 text-black font-extrabold text-xs px-2.5 py-1 rounded">محجوز 🔒</span> : <span className="bg-neutral-800 text-gray-300 text-xs px-2.5 py-1 rounded">متاح ✅</span>}
                         </div>
                         <button onClick={() => handleDeleteSlot(slot.id)} className="bg-neutral-800 hover:bg-red-950 hover:text-red-400 text-xs px-3 py-1.5 rounded-lg font-bold">حذف فردي</button>
                       </div>
@@ -398,12 +394,12 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* رفع الصور مباشرة من الهاتف أو الجهاز */}
+        {/* رفع الصور */}
         <div className="bg-black border border-neutral-800 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-4">📸 رفع صور أشغال ريتا </h2>
+          <h2 className="text-lg font-bold mb-4 text-yellow-400">📸 رفع صور أعمال ريتا (من الجهاز/الهاتف)</h2>
           <div className="mb-4">
-            <label className="block w-full border-2 border-dashed border-neutral-700 hover:border-white p-6 rounded-xl text-center cursor-pointer bg-neutral-900 transition-all">
-              <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك   📁</span>
+            <label className="block w-full border-2 border-dashed border-neutral-700 hover:border-yellow-500 p-6 rounded-xl text-center cursor-pointer bg-neutral-900 transition-all">
+              <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك أو جهازك 📁</span>
               <span className="text-gray-500 text-xs">يدعم JPG, PNG بكل الأحجام</span>
               <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
             </label>
@@ -422,7 +418,7 @@ export default function AdminPage() {
 
         {/* قائمة الانتظار */}
         <div>
-          <h2 className="text-xl font-bold mb-4">📋 قائمة الانتظار ({waitingList.length})</h2>
+          <h2 className="text-xl font-bold mb-4 text-yellow-400">📋 قائمة الانتظار ({waitingList.length})</h2>
           {waitingList.length === 0 ? (
             <p className="text-gray-500 bg-black p-4 rounded-xl border border-neutral-800 text-center">لا توجد طلبات في قائمة الانتظار.</p>
           ) : (

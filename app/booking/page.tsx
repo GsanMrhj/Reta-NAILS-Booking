@@ -164,7 +164,7 @@ export default function BookingPage() {
               </select>
             </div>
 
-            {/* تقويم الشهر بالأرقام الإنجليزية */}
+            {/* تقويم الشهر */}
             <div className="mb-6 bg-black p-4 rounded-2xl border border-neutral-800">
               <div className="flex justify-between items-center mb-4">
                 <button onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">‹</button>
@@ -208,6 +208,7 @@ export default function BookingPage() {
               </div>
             </div>
 
+            {/* الأوقات المتاحة (نظام 24 ساعة) */}
             {selectedDateStr && (
               <div className="mb-6">
                 <h3 className="text-md font-semibold text-yellow-400 mb-2">الأوقات المتاحة ليوم {selectedDateStr}:</h3>
@@ -216,7 +217,7 @@ export default function BookingPage() {
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {selectedDaySlots.map(slot => {
-                      const timeStr = new Date(slot.date_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                      const timeStr = new Date(slot.date_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // نظام 24 ساعة
                       return (
                         <button
                           key={slot.id}
