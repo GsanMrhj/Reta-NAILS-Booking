@@ -40,14 +40,6 @@ export default function Home() {
         <span className="absolute top-[80%] left-[15%] animate-bounce text-3xl">👑</span>
         <span className="absolute top-[88%] right-[10%] animate-spin text-4xl">🎀</span>
         <span className="absolute top-[95%] left-[30%] animate-pulse">💅</span>
-        
-        {/* الجانب الأيسر والأوسط إضافات مكثفة */}
-        <span className="absolute top-[12%] left-[45%] animate-pulse">💖</span>
-        <span className="absolute top-[25%] left-[55%] animate-bounce">🎀</span>
-        <span className="absolute top-[40%] left-[48%] animate-spin">✨</span>
-        <span className="absolute top-[60%] left-[52%] animate-bounce text-4xl">💅</span>
-        <span className="absolute top-[82%] left-[48%] animate-pulse">💎</span>
-        <span className="absolute top-[92%] left-[60%] animate-bounce">👑</span>
       </div>
 
       <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:24px_24px]"></div>
@@ -66,7 +58,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* اسم الصالون بخط متحرك */}
+        {/* اسم الصالون */}
         <h1 className="text-5xl sm:text-6xl font-black tracking-wider mb-3 uppercase font-serif" style={{
           background: 'linear-gradient(90deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
           backgroundSize: '200% auto',
@@ -83,10 +75,22 @@ export default function Home() {
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
           }
+          @keyframes scrollGallery {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-marquee {
+            display: flex;
+            width: max-content;
+            animation: scrollGallery 25s linear infinite;
+          }
+          .animate-marquee:hover {
+            animation-play-state: paused;
+          }
         `}</style>
 
         <p className="text-gray-300 mb-8 text-lg font-light">
-          أنوثة، فخامة، وعناية ملكية تليق بأظافركِ. احجزي موعدكِ وتألقي الآن.
+          أنوثة، فخامة، وعناية ملكية تليق بأظافركِ. احجزي دوركِ وتألقي الآن.
         </p>
         
         {/* أزرار التنقل */}
@@ -95,7 +99,7 @@ export default function Home() {
             href="/booking" 
             className="inline-block w-full bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black font-extrabold text-xl py-4 px-8 rounded-2xl transition-all shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:scale-[1.02]"
           >
-            🎀 احجزي موعدكِ الآن 🎀
+            🎀 احجزي دوركِ 🎀
           </Link>
           
           <Link 
@@ -107,18 +111,21 @@ export default function Home() {
         </div>
       </div>
 
-      {/* معرض أعمال ريتا (Gallery) */}
-      <div className="relative z-10 max-w-4xl w-full mx-auto mt-8 mb-16">
-        <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8 font-serif">📸 معرض أعمال ريتا الملكية</h2>
+      {/* معرض أعمال ريتا المتحرك (Moving Gallery Carousel) */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto mt-8 mb-16 overflow-hidden">
+        <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8 font-serif">📸 معرض أعمال ريتا </h2>
         {galleryImages.length === 0 ? (
-          <p className="text-gray-500 text-center">قريباً سيتم إضافة أحدث صور شغل الأظافر هنا ✨</p>
+          <p className="text-gray-500 text-center">قريباً سيتم رفع أحدث صور الأظافر هنا ✨</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {galleryImages.map((item) => (
-              <div key={item.id} className="bg-neutral-900 border border-yellow-500/30 rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition-transform">
-                <img src={item.image_url} alt="Nail Work" className="w-full h-64 object-cover" />
-              </div>
-            ))}
+          <div className="overflow-hidden w-full relative py-4">
+            <div className="animate-marquee flex gap-6">
+              {/* نكرر الصور مرتين لضمان استمرارية الحركة بدون توقف */}
+              {[...galleryImages, ...galleryImages].map((item, index) => (
+                <div key={index} className="w-72 h-80 bg-neutral-900 border border-yellow-500/30 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
+                  <img src={item.image_url} alt="Nail Work" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -135,7 +142,7 @@ export default function Home() {
           💬
         </a>
         <a 
-          href="https://instagram.com/retanails" 
+          href="https://instagram.com/reta.nails.1" 
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-700 hover:opacity-90 text-white rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 text-2xl"

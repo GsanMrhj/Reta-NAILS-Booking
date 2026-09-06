@@ -19,7 +19,12 @@ export default function AdminPage() {
   const [selectedDaySlots, setSelectedDaySlots] = useState<any[]>([]);
   
   const [newTime, setNewTime] = useState("");
-  const [newImgUrl, setNewImgUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  // إعدادات التوليد المخصص للشهر
+  const [genStart, setGenStart] = useState("10:00"); // وقت البداية الافتراضي
+  const [genEnd, setGenEnd] = useState("20:00");     // وقت النهاية الافتراضي
+  const [genInterval, setGenInterval] = useState(90);  // المدة بين الأدوار بالدقائق (90 دقيقة = ساعة ونص)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -67,7 +72,6 @@ export default function AdminPage() {
     setSelectedDaySlots(slots.filter(s => s.date_time.startsWith(dateStr)));
   };
 
-  // إضافة دور جديد لهذا اليوم المحدد
   async function handleAddSlotForDay() {
     if (!selectedDateStr || !newTime) return alert("الرجاء اختيار اليوم من التقويم وإدخال الوقت!");
     const dateTimeString = `${selectedDateStr}T${newTime}:00`;
@@ -88,10 +92,26 @@ export default function AdminPage() {
     fetchSlots();
   }
 
-  async function handleGenerateMonthSlots() {
+  // توليد الشهر حسب اختيار ريتا (ساعة البدء، ساعة النهاية، والفاصل الزمني)
+  async function handleCustomGenerateMonthSlots() {
     const totalDays = new Date(year, month + 1, 0).getDate();
-    const times = ["10:00", "11:30", "13:00", "14:30", "16:00", "17:30", "19:00", "20:30"];
     
+    let times: string[] = [];
+    let [startH, startM] = genStart.split(":").map(Number);
+    let [endH, endM] = genEnd.split(":").map(Number);
+
+    let currentMinutes = startH * 60 + startM;
+    let endMinutes = endH * 60 + endM;
+    let interval = Number(genInterval);
+
+    while (currentMinutes <= endMinutes) {
+      let h = Math.floor(currentMinutes / 60);
+      let m = currentMinutes % 60;
+      let timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      times.push(timeStr);
+      currentMinutes += interval;
+    }
+
     let newSlotsArray = [];
     for (let day = 1; day <= totalDays; day++) {
       const mStr = String(month + 1).padStart(2, '0');
@@ -105,15 +125,47 @@ export default function AdminPage() {
 
     const { error } = await supabase.from("available_slots").insert(newSlotsArray);
     if (!error) {
-      alert("✨ تم توليد مواعيد الشهر بالكامل بنجاح!");
+      alert(`✨ تم توليد مواعيد الشهر كاملة حسب اختيارك بنجاح! (${monthNamesEn[month]})`);
       fetchSlots();
+    } else {
+      alert("حدث خطأ أثناء التوليد.");
     }
   }
 
-  async function handleAddGalleryImage() {
-    if (!newImgUrl) return alert("الرجاء إدخال رابط الصورة");
-    const { error } = await supabase.from("gallery").insert([{ image_url: newImgUrl }]);
-    if (!error) { setNewImgUrl(""); fetchGallery(); alert("تمت إضافة الصورة بنجاح!"); }
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("gallery")
+      .upload(filePath, file);
+
+    if (uploadError) {
+      alert("خطأ في رفع الصورة، تأكد من إنشاء Bucket باسم 'gallery' في Supabase Storage.");
+      setUploading(false);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("gallery")
+      .getPublicUrl(filePath);
+
+    const publicUrl = publicUrlData.publicUrl;
+
+    const { error: insertError } = await supabase.from("gallery").insert([{ image_url: publicUrl }]);
+    
+    setUploading(false);
+    if (!insertError) {
+      fetchGallery();
+      alert("✨ تم رفع الصورة وإضافتها للمعرض بنجاح!");
+    } else {
+      alert("تم رفع الصورة لكن حدث خطأ في حفظها بقاعدة البيانات.");
+    }
   }
 
   async function handleDeleteGallery(id: string) {
@@ -137,7 +189,14 @@ export default function AdminPage() {
             className="w-full p-3 bg-black border-2 border-white rounded-xl mb-4 text-center text-white outline-none"
           />
           <button 
-            onClick={() => { if (password === "reta2026") setIsAuthenticated(true); else alert("خطأ!"); }} 
+            onClick={() => { 
+              if (password === "reta2026") {
+                setIsAuthenticated(true);
+                alert("👑 تاج راسك غسونه ابن عبوره✨");
+              } else {
+                alert("خطأ!");
+              }
+            }} 
             className="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-gray-200"
           >
             دخول
@@ -151,17 +210,42 @@ export default function AdminPage() {
     <main dir="rtl" className="min-h-screen bg-black text-white p-6 font-sans">
       <div className="max-w-4xl mx-auto bg-neutral-900 border border-neutral-800 p-6 sm:p-8 rounded-2xl shadow-2xl">
         
+        {/* رسالة فكاهية ترحيبية */}
+        <div className="bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-yellow-600/20 border border-yellow-500/40 p-4 rounded-2xl mb-6 text-center shadow-lg">
+          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑هههههه تاج راسك غسونه 👑</p>
+        </div>
+
         <div className="flex justify-between items-center border-b border-neutral-800 pb-6 mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold">لوحة تحكم ريتا ⚡</h1>
           <button onClick={() => setIsAuthenticated(false)} className="bg-white text-black px-4 py-2 rounded-xl font-bold text-sm">خروج</button>
         </div>
         
-        {/* زر التوليد التلقائي لشهر كامل */}
-        <div className="bg-neutral-800 border border-white/40 p-6 rounded-xl mb-8 text-center">
-          <h2 className="text-lg font-bold mb-2 text-white">✨ توليد مواعيد الشهر تلقائياً</h2>
-          <p className="text-gray-300 text-sm mb-4">إنشاء مواعيد لكل أيام الشهر الحالي من الساعة 10:00 صباحاً حتى 8:30 مساءً.</p>
-          <button onClick={handleGenerateMonthSlots} className="bg-white text-black font-bold px-6 py-3 rounded-xl shadow-md hover:bg-gray-200">
-            توليد جدول الشهر بالكامل 🚀
+        {/* إعدادات توليد الشهر حسب اختيار ريتا */}
+        <div className="bg-neutral-800 border border-white/40 p-6 rounded-xl mb-8">
+          <h2 className="text-lg font-bold mb-3 text-white">✨ انشاء شهر كامل حسب اختيارك</h2>
+          <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار، وسيتم تطبيقها على كل أيام الشهر الحالي تلقائياً:</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">يبدأ العمل الساعة:</label>
+              <input type="time" value={genStart} onChange={(e) => setGenStart(e.target.value)} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">ينتهي العمل الساعة:</label>
+              <input type="time" value={genEnd} onChange={(e) => setGenEnd(e.target.value)} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">المدة بين كل دور:</label>
+              <select value={genInterval} onChange={(e) => setGenInterval(Number(e.target.value))} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white">
+                <option value={60}>ساعة واحدة (60 دقيقة)</option>
+                <option value={90}>ساعة ونصف (90 دقيقة)</option>
+                <option value={120}>ساعتان (120 دقيقة)</option>
+              </select>
+            </div>
+          </div>
+
+          <button onClick={handleCustomGenerateMonthSlots} className="w-full bg-white text-black font-bold py-3.5 rounded-xl shadow-md hover:bg-gray-200">
+            توليد جدول الشهر بالكامل حسب إعداداتك 🚀
           </button>
         </div>
 
@@ -246,13 +330,18 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* إدارة صور المعرض */}
+        {/* رفع الصور مباشرة من الهاتف أو الجهاز */}
         <div className="bg-black border border-neutral-800 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-4">📸 إدارة معرض الأعمال</h2>
-          <div className="flex gap-3 mb-4">
-            <input type="text" placeholder="رابط الصورة (Image URL)..." value={newImgUrl} onChange={(e) => setNewImgUrl(e.target.value)} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white text-sm" />
-            <button onClick={handleAddGalleryImage} className="bg-white text-black font-bold px-6 py-3 rounded-xl whitespace-nowrap">إضافة للصورة</button>
+          <h2 className="text-lg font-bold mb-4">📸 رفع صور أعمال رتوش اخت غسونهه ههههه (من الهاتف)</h2>
+          <div className="mb-4">
+            <label className="block w-full border-2 border-dashed border-neutral-700 hover:border-white p-6 rounded-xl text-center cursor-pointer bg-neutral-900 transition-all">
+              <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك  📁</span>
+              <span className="text-gray-500 text-xs">يدعم JPG, PNG بكل الأحجام</span>
+              <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+            </label>
+            {uploading && <p className="text-yellow-400 text-center mt-2 font-bold animate-pulse">جاري رفع الصورة... ⏳</p>}
           </div>
+
           <div className="grid grid-cols-3 gap-3">
             {gallery.map(img => (
               <div key={img.id} className="relative group">
