@@ -18,15 +18,18 @@ export default function AdminPage() {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [selectedDaySlots, setSelectedDaySlots] = useState<any[]>([]);
   
-  // الأدوار المحددة للحذف الجماعي
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
-
-  const [newTime, setNewTime] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // إعدادات التوليد المخصص للشهر (نظام 24 ساعة)
-  const [genStart, setGenStart] = useState("10:00");
-  const [genEnd, setGenEnd] = useState("20:00");
+  // إدخال الوقت بنظام 24 ساعة (ساعات ودقائق منفصلة لضمان عدم ظهور AM/PM)
+  const [newHour, setNewHour] = useState("10");
+  const [newMinute, setNewMinute] = useState("00");
+
+  // إعدادات التوليد للشهر (نظام 24 ساعة)
+  const [genStartH, setGenStartH] = useState("10");
+  const [genStartM, setGenStartM] = useState("00");
+  const [genEndH, setGenEndH] = useState("20");
+  const [genEndM, setGenEndM] = useState("00");
   const [genInterval, setGenInterval] = useState(90);
 
   useEffect(() => {
@@ -77,12 +80,11 @@ export default function AdminPage() {
   };
 
   async function handleAddSlotForDay() {
-    if (!selectedDateStr || !newTime) return alert("الرجاء اختيار اليوم من التقويم وإدخال الوقت!");
-    const dateTimeString = `${selectedDateStr}T${newTime}:00`;
+    if (!selectedDateStr) return alert("الرجاء اختيار اليوم من التقويم أولاً!");
+    const dateTimeString = `${selectedDateStr}T${newHour}:${newMinute}:00`;
     
     const { error } = await supabase.from("available_slots").insert([{ date_time: dateTimeString }]);
     if (!error) {
-      setNewTime("");
       fetchSlots();
       alert("✨ تمت إضافة الدور بنجاح!");
     } else {
@@ -139,19 +141,16 @@ export default function AdminPage() {
     const totalDays = new Date(year, month + 1, 0).getDate();
     
     let times: string[] = [];
-    let [startH, startM] = genStart.split(":").map(Number);
-    let [endH, endM] = genEnd.split(":").map(Number);
-
-    let currentMinutes = startH * 60 + startM;
-    let endMinutes = endH * 60 + endM;
+    let startMinutes = Number(genStartH) * 60 + Number(genStartM);
+    let endMinutes = Number(genEndH) * 60 + Number(genEndM);
     let interval = Number(genInterval);
 
-    while (currentMinutes <= endMinutes) {
-      let h = Math.floor(currentMinutes / 60);
-      let m = currentMinutes % 60;
+    while (startMinutes <= endMinutes) {
+      let h = Math.floor(startMinutes / 60);
+      let m = startMinutes % 60;
       let timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
       times.push(timeStr);
-      currentMinutes += interval;
+      startMinutes += interval;
     }
 
     let newSlotsArray = [];
@@ -220,6 +219,10 @@ export default function AdminPage() {
     fetchWaitingList();
   }
 
+  // توليد أرقام الساعات (00 إلى 23)
+  const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const minutesList = ["00", "15", "30", "45"];
+
   if (!isAuthenticated) {
     return (
       <main dir="rtl" className="min-h-screen bg-black text-white flex items-center justify-center p-4 font-sans">
@@ -234,7 +237,7 @@ export default function AdminPage() {
             onClick={() => { 
               if (password === "reta2026") {
                 setIsAuthenticated(true);
-                alert("👑 تاج راسك غسونه ابن عبوره ههههههه✨");
+                alert("👑 تاج راسك غسونه ✨");
               } else {
                 alert("خطأ!");
               }
@@ -254,31 +257,47 @@ export default function AdminPage() {
         
         {/* رسالة فكاهية ترحيبية */}
         <div className="bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-yellow-600/20 border border-yellow-500/40 p-4 rounded-2xl mb-6 text-center shadow-lg">
-          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه ههههههه👑</p>
+          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه 👑</p>
         </div>
 
         <div className="flex justify-between items-center border-b border-neutral-800 pb-6 mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">لوحة تحكم رتووش  ⚡</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">لوحة تحكم ريتا ⚡</h1>
           <button onClick={() => setIsAuthenticated(false)} className="bg-yellow-500 text-black px-4 py-2 rounded-xl font-bold text-sm">خروج</button>
         </div>
         
-        {/* إعدادات توليد الشهر حسب اختيار ريتا */}
+        {/* إعدادات توليد الشهر حسب اختيار ريتا (نظام 24 ساعة بصيغة القوائم) */}
         <div className="bg-neutral-800 border border-yellow-500/30 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ انشاء شهر كامل حسب اختيارك </h2>
-          <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار (مثلاً من 10 إلى 22)، وسيتم تطبيقها على كل أيام الشهر الحالي تلقائياً:</p>
+          <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ توليد شهر كامل حسب اختيارك (نظام 24 ساعة)</h2>
+          <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار، وسيتم تطبيقها على كل أيام الشهر الحالي:</p>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">يبدأ العمل الساعة (مثلاً 10:00):</label>
-              <input type="time" value={genStart} onChange={(e) => setGenStart(e.target.value)} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
+              <label className="block text-xs text-gray-400 mb-1">يبدأ العمل الساعة:</label>
+              <div className="flex gap-2">
+                <select value={genStartH} onChange={(e) => setGenStartH(e.target.value)} className="w-1/2 p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
+                  {hoursList.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <select value={genStartM} onChange={(e) => setGenStartM(e.target.value)} className="w-1/2 p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
+                  {minutesList.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
             </div>
+
             <div>
-              <label className="block text-xs text-gray-400 mb-1">ينتهي العمل الساعة (مثلاً 22:00):</label>
-              <input type="time" value={genEnd} onChange={(e) => setGenEnd(e.target.value)} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
+              <label className="block text-xs text-gray-400 mb-1">ينتهي العمل الساعة:</label>
+              <div className="flex gap-2">
+                <select value={genEndH} onChange={(e) => setGenEndH(e.target.value)} className="w-1/2 p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
+                  {hoursList.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <select value={genEndM} onChange={(e) => setGenEndM(e.target.value)} className="w-1/2 p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
+                  {minutesList.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
             </div>
+
             <div>
               <label className="block text-xs text-gray-400 mb-1">المدة بين كل دور:</label>
-              <select value={genInterval} onChange={(e) => setGenInterval(Number(e.target.value))} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white">
+              <select value={genInterval} onChange={(e) => setGenInterval(Number(e.target.value))} className="w-full p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
                 <option value={60}>ساعة واحدة (60 دقيقة)</option>
                 <option value={90}>ساعة ونصف (90 دقيقة)</option>
                 <option value={120}>ساعتان (120 دقيقة)</option>
@@ -287,7 +306,7 @@ export default function AdminPage() {
           </div>
 
           <button onClick={handleCustomGenerateMonthSlots} className="w-full bg-yellow-500 text-black font-extrabold py-3.5 rounded-xl shadow-md hover:bg-yellow-400">
-            انشاء جدول الشهر بالكامل حسب إعداداتك 🚀
+            توليد جدول الشهر بالكامل حسب إعداداتك 🚀
           </button>
         </div>
 
@@ -331,14 +350,22 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* إدارة أدوار اليوم المختار */}
+        {/* إدارة أدوار اليوم المختار (مع قوائم ساعات ودقائق 24 ساعة بدلاً من input time) */}
         {selectedDateStr && (
           <div className="bg-black border border-yellow-500/30 p-6 rounded-xl mb-8">
             <h2 className="text-xl font-bold mb-4 text-white">إدارة أدوار يوم: <span className="text-yellow-400">{selectedDateStr}</span></h2>
             
-            <div className="flex gap-3 mb-6">
-              <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-white" />
-              <button onClick={handleAddSlotForDay} className="bg-yellow-500 text-black font-bold px-6 py-3 rounded-xl hover:bg-yellow-400">＋ إضافة دور جديد</button>
+            <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center">
+              <div className="flex gap-2 w-full sm:w-auto">
+                <select value={newHour} onChange={(e) => setNewHour(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
+                  {hoursList.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <span className="text-white font-bold self-center">:</span>
+                <select value={newMinute} onChange={(e) => setNewMinute(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
+                  {minutesList.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <button onClick={handleAddSlotForDay} className="w-full sm:w-auto bg-yellow-500 text-black font-bold px-6 py-3 rounded-xl hover:bg-yellow-400">＋ إضافة دور جديد</button>
             </div>
 
             {/* أزرار الحذف الجماعي */}
@@ -361,7 +388,7 @@ export default function AdminPage() {
                 <p className="text-gray-400 text-sm">لا توجد أدوار مضافة في هذا اليوم.</p>
               ) : (
                 selectedDaySlots.map(slot => {
-                  const timeStr = new Date(slot.date_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // 24 ساعة
+                  const timeStr = new Date(slot.date_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                   const isChecked = selectedSlotIds.includes(slot.id);
                   return (
                     <div key={slot.id} className={`p-4 rounded-xl border transition-all flex flex-col gap-2 ${isChecked ? 'bg-neutral-800 border-yellow-500' : 'bg-neutral-900 border-neutral-800'}`}>
