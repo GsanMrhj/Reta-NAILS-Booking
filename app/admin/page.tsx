@@ -21,11 +21,11 @@ export default function AdminPage() {
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // إدخال الوقت بنظام 24 ساعة (ساعات ودقائق منفصلة لضمان عدم ظهور AM/PM)
+  // الساعات والدقائق لإضافة دور جديد
   const [newHour, setNewHour] = useState("10");
   const [newMinute, setNewMinute] = useState("00");
 
-  // إعدادات التوليد للشهر (نظام 24 ساعة)
+  // إعدادات التوليد للشهر
   const [genStartH, setGenStartH] = useState("10");
   const [genStartM, setGenStartM] = useState("00");
   const [genEndH, setGenEndH] = useState("20");
@@ -219,7 +219,6 @@ export default function AdminPage() {
     fetchWaitingList();
   }
 
-  // توليد أرقام الساعات (00 إلى 23)
   const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
   const minutesList = ["00", "15", "30", "45"];
 
@@ -255,7 +254,6 @@ export default function AdminPage() {
     <main dir="rtl" className="min-h-screen bg-black text-white p-6 font-sans">
       <div className="max-w-4xl mx-auto bg-neutral-900 border border-neutral-800 p-6 sm:p-8 rounded-2xl shadow-2xl">
         
-        {/* رسالة فكاهية ترحيبية */}
         <div className="bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-yellow-600/20 border border-yellow-500/40 p-4 rounded-2xl mb-6 text-center shadow-lg">
           <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه 👑</p>
         </div>
@@ -265,10 +263,10 @@ export default function AdminPage() {
           <button onClick={() => setIsAuthenticated(false)} className="bg-yellow-500 text-black px-4 py-2 rounded-xl font-bold text-sm">خروج</button>
         </div>
         
-        {/* إعدادات توليد الشهر حسب اختيار ريتا (نظام 24 ساعة بصيغة القوائم) */}
+        {/* إعدادات توليد الشهر */}
         <div className="bg-neutral-800 border border-yellow-500/30 p-6 rounded-xl mb-8">
           <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ توليد شهر كامل حسب اختيارك (نظام 24 ساعة)</h2>
-          <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار، وسيتم تطبيقها على كل أيام الشهر الحالي:</p>
+          <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار، وسيتم تطبيقها على كل أيام الشهر:</p>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
@@ -350,13 +348,14 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* إدارة أدوار اليوم المختار (مع قوائم ساعات ودقائق 24 ساعة بدلاً من input time) */}
+        {/* إدارة أدوار اليوم المختار */}
         {selectedDateStr && (
           <div className="bg-black border border-yellow-500/30 p-6 rounded-xl mb-8">
             <h2 className="text-xl font-bold mb-4 text-white">إدارة أدوار يوم: <span className="text-yellow-400">{selectedDateStr}</span></h2>
             
             <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center">
               <div className="flex gap-2 w-full sm:w-auto">
+                {/* قائمة الساعات (اليسار) وقائمة الدقائق (اليمين) لتبدو طبيعية وواضحة */}
                 <select value={newHour} onChange={(e) => setNewHour(e.target.value)} className="p-3 bg-neutral-900 border border-neutral-700 rounded-xl text-yellow-400 font-bold">
                   {hoursList.map(h => <option key={h} value={h}>{h}</option>)}
                 </select>
@@ -388,7 +387,8 @@ export default function AdminPage() {
                 <p className="text-gray-400 text-sm">لا توجد أدوار مضافة في هذا اليوم.</p>
               ) : (
                 selectedDaySlots.map(slot => {
-                  const timeStr = new Date(slot.date_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                  // استخراج الوقت مباشرة من النص (YYYY-MM-DDTHH:mm:ss) بدون تحويل زمني
+                  const timeStr = slot.date_time.split('T')[1]?.substring(0, 5) || "";
                   const isChecked = selectedSlotIds.includes(slot.id);
                   return (
                     <div key={slot.id} className={`p-4 rounded-xl border transition-all flex flex-col gap-2 ${isChecked ? 'bg-neutral-800 border-yellow-500' : 'bg-neutral-900 border-neutral-800'}`}>
