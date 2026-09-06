@@ -1,22 +1,45 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export default function Home() {
-  return (
-    <main dir="rtl" className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
-      
-      {/* خلفية أنثوية فخمة مع إضاءات ذهبية */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:24px_24px]"></div>
-      <div className="absolute top-10 left-1/4 w-80 h-80 bg-pink-600/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-yellow-500/15 rounded-full blur-3xl pointer-events-none"></div>
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
 
-      {/* عناصر جمالية عائمة */}
-      <div className="absolute top-12 right-12 text-3xl animate-bounce opacity-70 pointer-events-none">🎀</div>
-      <div className="absolute bottom-16 left-16 text-3xl animate-pulse opacity-70 pointer-events-none">💅</div>
-      <div className="absolute top-1/3 left-12 text-2xl animate-spin opacity-55 pointer-events-none">✨</div>
+  useEffect(() => {
+    fetchGallery();
+  }, []);
+
+  async function fetchGallery() {
+    const { data } = await supabase.from("gallery").select("*").order("created_at", { ascending: false });
+    if (data) setGalleryImages(data);
+  }
+
+  return (
+    <main dir="rtl" className="min-h-screen bg-black text-white flex flex-col items-center justify-between p-6 relative overflow-hidden font-sans">
+      
+      {/* خلفية مليئة بالإيموجيز واللمعات المتنوعة */}
+      <div className="absolute inset-0 opacity-25 pointer-events-none overflow-hidden select-none">
+        <span className="absolute top-[5%] left-[10%] text-3xl animate-bounce">🎀</span>
+        <span className="absolute top-[15%] right-[15%] text-4xl animate-pulse">💅</span>
+        <span className="absolute top-[25%] left-[30%] text-2xl animate-spin">✨</span>
+        <span className="absolute top-[40%] right-[10%] text-3xl animate-bounce">🎀</span>
+        <span className="absolute top-[55%] left-[5%] text-4xl animate-pulse">💅</span>
+        <span className="absolute top-[70%] right-[25%] text-2xl animate-spin">✨</span>
+        <span className="absolute top-[85%] left-[20%] text-3xl animate-bounce">🎀</span>
+        <span className="absolute top-[90%] right-[5%] text-4xl animate-pulse">💅</span>
+        <span className="absolute top-[30%] left-[80%] text-3xl animate-pulse">✨</span>
+      </div>
+
+      <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:24px_24px]"></div>
 
       {/* المحتوى الرئيسي */}
-      <div className="relative z-10 bg-neutral-900/90 backdrop-blur-xl p-8 sm:p-12 rounded-3xl shadow-[0_0_60px_rgba(212,175,55,0.25)] text-center max-w-xl w-full border border-yellow-500/40">
+      <div className="relative z-10 max-w-xl w-full mx-auto my-12 bg-neutral-900/90 backdrop-blur-xl p-8 sm:p-12 rounded-3xl shadow-[0_0_60px_rgba(212,175,55,0.25)] text-center border border-yellow-500/40">
         
         <div className="flex justify-center items-center gap-2 mb-4 text-yellow-400 text-sm tracking-widest uppercase">
           <span>✨</span> 🎀 Luxury Nail Art 🎀 <span>✨</span>
@@ -29,7 +52,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* اسم الصالون */}
+        {/* اسم الصالون بخط متحرك */}
         <h1 className="text-5xl sm:text-6xl font-black tracking-wider mb-3 uppercase font-serif" style={{
           background: 'linear-gradient(90deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
           backgroundSize: '200% auto',
@@ -49,28 +72,44 @@ export default function Home() {
         `}</style>
 
         <p className="text-gray-300 mb-8 text-lg font-light">
-          أنوثة، فخامة، وعناية ملكية تليق بأظافركِ. تصفحي خدماتنا أو احجزي موعدكِ الآن.
+          أنوثة، فخامة، وعناية ملكية تليق بأظافركِ. احجزي موعدكِ وتألقي الآن.
         </p>
         
         {/* أزرار التنقل */}
         <div className="space-y-3">
           <Link 
             href="/booking" 
-            className="inline-block w-full bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black font-extrabold text-xl py-4 px-8 rounded-2xl transition-all duration-300 shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:scale-[1.02]"
+            className="inline-block w-full bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black font-extrabold text-xl py-4 px-8 rounded-2xl transition-all shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:scale-[1.02]"
           >
             🎀 احجزي موعدكِ الآن 🎀
           </Link>
           
           <Link 
             href="/services" 
-            className="inline-block w-full bg-neutral-800 hover:bg-neutral-700 text-yellow-400 border border-yellow-500/40 font-bold text-lg py-3 px-8 rounded-2xl transition-all duration-300"
+            className="inline-block w-full bg-neutral-800 hover:bg-neutral-700 text-yellow-400 border border-yellow-500/40 font-bold text-lg py-3 px-8 rounded-2xl transition-all"
           >
-            📋 الخدمات والأسعار
+            📋 قائمة الخدمات والأسعار
           </Link>
         </div>
       </div>
 
-      {/* أزرار التواصل الثابتة (برقم ريتا الحقيقي 0556860522) */}
+      {/* معرض أعمال ريتا (Gallery) */}
+      <div className="relative z-10 max-w-4xl w-full mx-auto mt-8 mb-16">
+        <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8 font-serif">📸 معرض أعمال ريتا الملكية</h2>
+        {galleryImages.length === 0 ? (
+          <p className="text-gray-500 text-center">قريباً سيتم إضافة أحدث صور شغل الأظافر هنا ✨</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {galleryImages.map((item) => (
+              <div key={item.id} className="bg-neutral-900 border border-yellow-500/30 rounded-2xl overflow-hidden shadow-lg hover:scale-105 transition-transform">
+                <img src={item.image_url} alt="Nail Work" className="w-full h-64 object-cover" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* أزرار التواصل الثابتة */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
         <a 
           href="https://wa.me/972556860522" 
@@ -82,7 +121,7 @@ export default function Home() {
           💬
         </a>
         <a 
-          href="https://instagram.com/reta.nails.1" 
+          href="https://instagram.com/retanails" 
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-700 hover:opacity-90 text-white rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 text-2xl"
@@ -94,19 +133,5 @@ export default function Home() {
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

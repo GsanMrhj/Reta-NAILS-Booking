@@ -1,5 +1,7 @@
+// app/booking/page.tsx
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 
@@ -11,62 +13,76 @@ const supabase = createClient(
 export default function BookingPage() {
   const router = useRouter();
   const [slots, setSlots] = useState<any[]>([]);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   
+  const servicesList = [
+    "ميلوي (₪100)",
+    "جيل مبنى انتومي (₪70)",
+    "بولي جيل (₪100)",
+    "جيل عادي (₪50)",
+    "بنيا تيبيس جيل (₪120)",
+    "بنيا بلدر جيل (₪150)",
+    "تنظيف ضافير (₪50)",
+    "جيل ضافير جريات (₪60)",
+    "ضافير ديات جريات (₪150)"
+  ];
+  const [selectedService, setSelectedService] = useState(servicesList[0]);
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(true);
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [generatedOtp, setGeneratedOtp] = useState("");
 
+  const [showWaitingListForm, setShowWaitingListForm] = useState(false);
+  const [waitingNote, setWaitingNote] = useState("");
+
   useEffect(() => {
-    async function fetchSlots() {
-      const { data } = await supabase
-        .from("available_slots")
-        .select("*")
-        .eq("is_booked", false)
-        .order("date_time", { ascending: true });
-      if (data) setSlots(data);
-      setLoading(false);
-    }
-    fetchSlots();
+    fetchAvailableSlots();
   }, []);
 
-  // تنسيق رقم الهاتف ليناسب روابط الواتساب (للأرقام الإسرائيلية والمحلية)
+  async function fetchAvailableSlots() {
+    const { data } = await supabase
+      .from("available_slots")
+      .select("*")
+      .eq("is_booked", false)
+      .order("date_time", { ascending: true });
+    if (data) setSlots(data);
+    setLoading(false);
+  }
+
+  const availableDates = Array.from(new Set(slots.map(s => s.date_time.split("T")[0])));
+  const slotsForSelectedDate = slots.filter(s => s.date_time.startsWith(selectedDate));
+
   const formatPhoneNumber = (num: string) => {
-    let cleanNum = num.replace(/\D/g, ''); // إزالة أي رموز أو مسافات
-    if (cleanNum.startsWith('0')) {
-      cleanNum = '972' + cleanNum.substring(1); // تحويل 05xxxxxxxx إلى 9725xxxxxxxx
-    }
+    let cleanNum = num.replace(/\D/g, '');
+    if (cleanNum.startsWith('0')) cleanNum = '972' + cleanNum.substring(1);
     return cleanNum;
   };
 
-  // 1. طلب الحجز وتوليد كود الواتساب
   const handleBookingRequest = () => {
-    if (!name || !phone || !selectedSlot) {
-      alert("الرجاء تعبئة الاسم ورقم الواتساب واختيار موعد!");
+    if (!name || !phone || !selectedSlot || !selectedService) {
+      alert("الرجاء تعبئة الاسم، رقم الواتساب، الخدمة، واختيار موعد!");
       return;
     }
 
-    // توليد كود سري من 4 أرقام
     const code = Math.floor(1000 + Math.random() * 9000).toString();
     setGeneratedOtp(code);
 
     const formattedPhone = formatPhoneNumber(phone);
-    const message = `مرحباً ${name}، رمز التأكيد الخاص بك لحجز موعد في صالون ريتا للأظافر هو: *${code}*`;
+    const message = `مرحباً ${name}، رمز التأكيد الخاص بك لحجز موعد (${selectedService}) في صالون ريتا هو: *${code}*`;
     
-    // فتح رابط الواتساب الرسمي لإرسال الكود للزبونة
     const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
 
     setShowOtpInput(true);
   };
 
-  // 2. التحقق من الكود وتثبيت الحجز
   const handleVerifyOtp = async () => {
     if (otpCode !== generatedOtp) {
-      alert("❌ الرمز الذي أدخلته خاطئ، يرجى التأكد من رسالة الواتساب!");
+      alert("❌ الرمز خاطئ، تأكد من رسالة الواتساب!");
       return;
     }
 
@@ -74,95 +90,166 @@ export default function BookingPage() {
       customer_name: name, 
       customer_phone: phone, 
       slot_id: selectedSlot, 
+      service_name: selectedService,
       status: 'confirmed'
     }]);
 
-    if (insertError) {
-      alert("حدث خطأ أثناء حفظ الحجز بقاعدة البيانات.");
-      return;
-    }
+    if (insertError) return alert("حدث خطأ أثناء الحجز.");
     
-    // تحديث الموعد ليصبح محجوزاً
     await supabase.from("available_slots").update({ is_booked: true }).eq("id", selectedSlot);
 
-    alert("✅ تم تأكيد حجزك بنجاح! ننتظرك في الصالون.");
+    alert("✅ تم تأكيد حجزك بنجاح! بانتظارك في الصالون.");
     router.push("/");
+  };
+
+  const handleJoinWaitingList = async () => {
+    if (!name || !phone) {
+      alert("الرجاء إدخال الاسم ورقم الواتساب للانضمام لقائمة الانتظار.");
+      return;
+    }
+
+    const { error } = await supabase.from("waiting_list").insert([{
+      customer_name: name,
+      customer_phone: phone,
+      requested_note: waitingNote || "بدون ملاحظات"
+    }]);
+
+    if (error) {
+      alert("حدث خطأ، يرجى المحاولة لاحقاً.");
+    } else {
+      alert("✨ تم تسجيلك في قائمة الانتظار بنجاح! ستتواصل معكِ ريتا فور توفر أي شاغر.");
+      router.push("/");
+    }
   };
 
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-yellow-500 font-bold text-xl">جاري التحميل...</div>;
 
   return (
-    <main dir="rtl" className="min-h-screen bg-black p-6 flex flex-col items-center justify-center font-sans">
-      <div className="bg-gray-900 p-8 rounded-3xl shadow-[0_0_30px_rgba(212,175,55,0.1)] w-full max-w-xl border-t-4 border-yellow-500">
-        <h1 className="text-3xl font-bold text-yellow-500 mb-8 text-center">احجزي موعدك 💅</h1>
+    <main dir="rtl" className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center font-sans relative">
+      <div className="bg-neutral-900 p-8 rounded-3xl shadow-[0_0_40px_rgba(212,175,55,0.2)] w-full max-w-xl border-t-4 border-yellow-500 relative z-10">
         
-        {!showOtpInput ? (
+        <div className="text-center mb-6">
+          <Link href="/" className="text-yellow-400 text-sm hover:underline">← العودة للرئيسية</Link>
+          <h1 className="text-3xl font-bold text-yellow-500 mt-2">🎀 احجزي موعدكِ الملكي 🎀</h1>
+        </div>
+
+        {!showOtpInput && !showWaitingListForm ? (
           <>
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">1. اختاري الوقت المناسب:</h2>
-              {slots.length === 0 ? (
-                <p className="text-gray-400 bg-gray-800 p-4 rounded-xl text-center border border-gray-700">لا يوجد أوقات متاحة حالياً.</p>
+            <div className="mb-6">
+              <label className="block text-gray-300 font-semibold mb-2">1. اختاري الخدمة المطلوبة:</label>
+              <select 
+                value={selectedService} 
+                onChange={(e) => setSelectedService(e.target.value)}
+                className="w-full p-4 bg-black border border-yellow-500/40 rounded-xl text-yellow-400 font-bold outline-none"
+              >
+                {servicesList.map((srv, idx) => (
+                  <option key={idx} value={srv}>{srv}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-300 mb-3">2. اختاري اليوم المتاح:</h2>
+              {availableDates.length === 0 ? (
+                <div className="text-center bg-black p-4 rounded-xl border border-neutral-800">
+                  <p className="text-gray-400 mb-3">لا توجد أيام متاحة حالياً في الجدول.</p>
+                  <button onClick={() => setShowWaitingListForm(true)} className="text-yellow-400 font-bold underline">
+                    📝 التسجيل في قائمة الانتظار (Waiting List)
+                  </button>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {slots.map((slot) => {
-                    const dateObj = new Date(slot.date_time);
-                    return (
-                      <button
-                        key={slot.id} onClick={() => setSelectedSlot(slot.id)}
-                        className={`p-4 rounded-xl border transition-all ${
-                          selectedSlot === slot.id 
-                          ? "border-yellow-500 bg-yellow-500/10 text-yellow-400 font-bold shadow-[0_0_10px_rgba(212,175,55,0.2)]" 
-                          : "border-gray-700 text-gray-400 hover:border-yellow-500/50 bg-gray-800"
-                        }`}
-                      >
-                        <div className="text-lg">{dateObj.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</div>
-                        <div className="text-sm">{dateObj.toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' })}</div>
-                      </button>
-                    );
-                  })}
+                <div className="flex flex-wrap gap-2">
+                  {availableDates.map(dateStr => (
+                    <button
+                      key={dateStr}
+                      onClick={() => { setSelectedDate(dateStr); setSelectedSlot(null); }}
+                      className={`px-4 py-2.5 rounded-xl border font-bold transition-all ${
+                        selectedDate === dateStr 
+                        ? "bg-yellow-500 text-black border-yellow-400 shadow-lg" 
+                        : "bg-black text-gray-300 border-neutral-700 hover:border-yellow-500"
+                      }`}
+                    >
+                      {new Date(dateStr).toLocaleDateString('ar-EG', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
 
-            <div className="mb-8 space-y-4">
-              <h2 className="text-xl font-semibold text-gray-300 mb-2">2. معلوماتك لتأكيد الحجز:</h2>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">الاسم الكريم:</label>
-                <input 
-                  type="text" placeholder="اكتبي اسمك هنا..." value={name} onChange={(e) => setName(e.target.value)} 
-                  className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-yellow-500 text-white placeholder-gray-500 text-right"
-                />
+            {selectedDate && (
+              <div className="mb-6">
+                <h3 className="text-md font-semibold text-yellow-400 mb-2">الأوقات المتاحة ليوم {selectedDate}:</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {slotsForSelectedDate.map(slot => {
+                    const timeStr = new Date(slot.date_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => setSelectedSlot(slot.id)}
+                        className={`p-3 rounded-xl border text-center transition-all ${
+                          selectedSlot === slot.id ? "bg-yellow-500/20 border-yellow-500 text-yellow-400 font-bold" : "bg-black border-neutral-800 text-gray-300"
+                        }`}
+                      >
+                        {timeStr}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">رقم الواتساب (مثال: 0501234567):</label>
-                <input 
-                  type="tel" placeholder="05xxxxxxxx" value={phone} onChange={(e) => setPhone(e.target.value)} 
-                  className="w-full p-4 bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:border-yellow-500 text-white placeholder-gray-500 text-right text-left-dir"
-                />
-              </div>
+            )}
+
+            <div className="mb-6 space-y-3">
+              <h2 className="text-lg font-semibold text-gray-300">3. معلومات التواصل:</h2>
+              <input 
+                type="text" placeholder="اسمك الكريم..." value={name} onChange={(e) => setName(e.target.value)} 
+                className="w-full p-3.5 bg-black border border-neutral-700 rounded-xl text-white outline-none focus:border-yellow-500"
+              />
+              <input 
+                type="tel" placeholder="رقم الواتساب (مثال: 0556860522)" value={phone} onChange={(e) => setPhone(e.target.value)} 
+                className="w-full p-3.5 bg-black border border-neutral-700 rounded-xl text-white outline-none focus:border-yellow-500"
+              />
             </div>
 
             <button 
-              onClick={handleBookingRequest} disabled={!selectedSlot} 
-              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 text-black font-bold py-4 rounded-xl transition-all shadow-lg text-lg"
+              onClick={handleBookingRequest} 
+              disabled={!selectedSlot} 
+              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 disabled:from-neutral-800 disabled:text-neutral-500 text-black font-extrabold py-4 rounded-xl shadow-lg text-lg"
             >
               إرسال رمز التأكيد عبر الواتساب 💬
             </button>
+
+            <div className="mt-4 text-center">
+              <button onClick={() => setShowWaitingListForm(true)} className="text-sm text-gray-400 hover:text-yellow-400 underline">
+                لا توجد ساعة مناسبة؟ انضمي لقائمة الانتظار 📋
+              </button>
+            </div>
           </>
+        ) : showWaitingListForm ? (
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-yellow-400 mb-2">قائمة الانتظار 📋</h2>
+            <p className="text-gray-400 text-sm mb-6">سجلي بياناتك وسنتواصل معكِ فور توفر أي موعد جديد.</p>
+            <div className="space-y-3 mb-6">
+              <input type="text" placeholder="اسمك الكريم..." value={name} onChange={(e) => setName(e.target.value)} className="w-full p-3.5 bg-black border rounded-xl text-white"/>
+              <input type="tel" placeholder="رقم الواتساب..." value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full p-3.5 bg-black border rounded-xl text-white"/>
+              <input type="text" placeholder="ملاحظة أو الوقت المفضل (اختياري)..." value={waitingNote} onChange={(e) => setWaitingNote(e.target.value)} className="w-full p-3.5 bg-black border rounded-xl text-white"/>
+            </div>
+            <button onClick={handleJoinWaitingList} className="w-full bg-yellow-500 text-black font-bold py-3.5 rounded-xl shadow-lg">
+              تسجيل في قائمة الانتظار ✨
+            </button>
+            <button onClick={() => setShowWaitingListForm(false)} className="mt-4 text-sm text-gray-400 underline">العودة للحجز العادي</button>
+          </div>
         ) : (
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-yellow-500 mb-4">أكّدي رمز الواتساب 💬</h2>
-            <p className="text-gray-400 mb-6">لقد فتحنا لك محادثة واتساب تحتوي على رمز التأكيد المكون من 4 أرقام. أدخليه هنا للمتابعة:</p>
+            <h2 className="text-2xl font-bold text-yellow-400 mb-4">أكّدي رمز الواتساب 💬</h2>
+            <p className="text-gray-400 mb-6">أدخلي الرمز المكون من 4 أرقام المرسل إلى واتسابك:</p>
             <input 
-              type="text" placeholder="----" maxLength={4} value={otpCode} onChange={(e) => setOtpCode(e.target.value)} 
-              className="w-full p-4 mb-6 bg-gray-800 border-2 border-gray-700 focus:border-yellow-500 rounded-xl text-center text-3xl tracking-widest font-bold text-white placeholder-gray-600 outline-none"
+              type="text" maxLength={4} value={otpCode} onChange={(e) => setOtpCode(e.target.value)} 
+              className="w-full p-4 mb-6 bg-black border-2 border-yellow-500 rounded-xl text-center text-3xl tracking-widest font-bold text-white outline-none"
             />
-            <button onClick={handleVerifyOtp} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg text-lg">
+            <button onClick={handleVerifyOtp} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl shadow-lg">
               تأكيد الحجز النهائي ✅
             </button>
-            <button onClick={() => setShowOtpInput(false)} className="w-full mt-4 text-gray-400 hover:text-yellow-500 underline">
-              تعديل الرقم أو الوقت
-            </button>
+            <button onClick={() => setShowOtpInput(false)} className="w-full mt-4 text-gray-400 underline">تعديل البيانات</button>
           </div>
         )}
       </div>
