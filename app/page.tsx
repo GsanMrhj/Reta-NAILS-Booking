@@ -149,7 +149,7 @@ export default function Home() {
           💬
         </a>
         <a 
-          href="https://instagram.com/retanails" 
+          href="https://instagram.com/reta.nailS.1" 
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-700 hover:opacity-90 text-white rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 text-2xl"

@@ -236,7 +236,7 @@ export default function AdminPage() {
             onClick={() => { 
               if (password === "reta2026") {
                 setIsAuthenticated(true);
-                alert("👑 تاج راسك غسونه ✨");
+                alert("👑 تاج راسك غسونييي هع✨");
               } else {
                 alert("خطأ!");
               }
@@ -255,7 +255,7 @@ export default function AdminPage() {
       <div className="max-w-4xl mx-auto bg-neutral-900 border border-neutral-800 p-6 sm:p-8 rounded-2xl shadow-2xl">
         
         <div className="bg-gradient-to-r from-yellow-600/20 via-yellow-500/10 to-yellow-600/20 border border-yellow-500/40 p-4 rounded-2xl mb-6 text-center shadow-lg">
-          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه 👑</p>
+          <p className="text-xl font-extrabold text-yellow-400 tracking-wider animate-pulse">👑 تاج راسك غسونه ابن عبورةة هههههه👑</p>
         </div>
 
         <div className="flex justify-between items-center border-b border-neutral-800 pb-6 mb-8">
@@ -265,7 +265,7 @@ export default function AdminPage() {
         
         {/* إعدادات توليد الشهر */}
         <div className="bg-neutral-800 border border-yellow-500/30 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ توليد شهر كامل حسب اختيارك (نظام 24 ساعة)</h2>
+          <h2 className="text-lg font-bold mb-3 text-yellow-400">✨ انشاء شهر كامل حسب اختيارك </h2>
           <p className="text-gray-300 text-sm mb-4">حددي ساعات العمل والفاصل الزمني بين الأدوار، وسيتم تطبيقها على كل أيام الشهر:</p>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -423,10 +423,10 @@ export default function AdminPage() {
 
         {/* رفع الصور */}
         <div className="bg-black border border-neutral-800 p-6 rounded-xl mb-8">
-          <h2 className="text-lg font-bold mb-4 text-yellow-400">📸 رفع صور أعمال ريتا (من الجهاز/الهاتف)</h2>
+          <h2 className="text-lg font-bold mb-4 text-yellow-400">📸 رفع صور أعمال رتوششه الفنانه  هه </h2>
           <div className="mb-4">
             <label className="block w-full border-2 border-dashed border-neutral-700 hover:border-yellow-500 p-6 rounded-xl text-center cursor-pointer bg-neutral-900 transition-all">
-              <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك أو جهازك 📁</span>
+              <span className="text-gray-300 font-bold block mb-1">اضغطي هنا لاختيار صورة من هاتفك   📁</span>
               <span className="text-gray-500 text-xs">يدعم JPG, PNG بكل الأحجام</span>
               <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
             </label>
