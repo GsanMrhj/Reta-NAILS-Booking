@@ -17,7 +17,7 @@ export default function AdminPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   
-  // التعديل السحري: حساب الأدوار لليوم المختار بشكل "مباشر" ومستمر من القائمة الأساسية
+  // 🔥 الحل الجذري: حساب أدوار اليوم مباشرة من القائمة الرئيسية لضمان التحديث الفوري
   const selectedDaySlots = selectedDateStr ? slots.filter(s => s.date_time.startsWith(selectedDateStr)) : [];
   
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
@@ -81,32 +81,22 @@ export default function AdminPage() {
     if (!selectedDateStr) return alert("الرجاء اختيار اليوم من التقويم أولاً!");
     const dateTimeString = `${selectedDateStr}T${newHour}:${newMinute}:00`;
     
-    // الإضافة مع إرجاع البيانات فوراً لتحديث الشاشة بلحظتها
-    const { data, error } = await supabase
-      .from("available_slots")
-      .insert([{ date_time: dateTimeString }])
-      .select(`id, date_time, is_booked, bookings ( customer_name, customer_phone, service_name )`);
-      
-    if (!error && data) {
-      // تحديث الشاشة فوراً
-      setSlots(prev => {
-        const newSlots = [...prev, ...data];
-        return newSlots.sort((a, b) => a.date_time.localeCompare(b.date_time));
-      });
+    // إضافة الدور بالشكل السليم بدون تعقيدات
+    const { error } = await supabase.from("available_slots").insert([{ date_time: dateTimeString }]);
+    
+    if (!error) {
+      await fetchSlots(); // 🔥 إجبار الموقع على جلب البيانات فوراً ليتحدث العرض
       alert("✨ تمت إضافة الدور بنجاح!");
     } else {
+      console.error(error);
       alert("حدث خطأ أثناء الإضافة.");
     }
   }
 
   async function handleDeleteSlot(id: string) {
     if (!confirm("هل أنت متأكدة من حذف هذا الدور؟")) return;
-    
-    const { error } = await supabase.from("available_slots").delete().eq("id", id);
-    if (!error) {
-      // إخفاء الدور المحذوف فوراً من الشاشة
-      setSlots(prev => prev.filter(s => s.id !== id));
-    }
+    await supabase.from("available_slots").delete().eq("id", id);
+    await fetchSlots();
   }
 
   const toggleSlotSelection = (id: string) => {
@@ -123,8 +113,8 @@ export default function AdminPage() {
 
     const { error } = await supabase.from("available_slots").delete().in("id", selectedSlotIds);
     if (!error) {
-      setSlots(prev => prev.filter(s => !selectedSlotIds.includes(s.id)));
       setSelectedSlotIds([]);
+      await fetchSlots();
       alert("✨ تم حذف الأدوار المحددة بنجاح!");
     } else {
       alert("حدث خطأ أثناء الحذف.");
@@ -140,8 +130,8 @@ export default function AdminPage() {
 
     const { error } = await supabase.from("available_slots").delete().in("id", idsToDelete);
     if (!error) {
-      setSlots(prev => prev.filter(s => !idsToDelete.includes(s.id)));
       setSelectedSlotIds([]);
+      await fetchSlots();
       alert(`✨ تم حذف كافة أدوار يوم ${selectedDateStr} بنجاح!`);
     } else {
       alert("حدث خطأ أثناء الحذف.");
@@ -175,16 +165,9 @@ export default function AdminPage() {
       }
     }
 
-    const { data, error } = await supabase
-      .from("available_slots")
-      .insert(newSlotsArray)
-      .select(`id, date_time, is_booked, bookings ( customer_name, customer_phone, service_name )`);
-      
-    if (!error && data) {
-      setSlots(prev => {
-        const newSlots = [...prev, ...data];
-        return newSlots.sort((a, b) => a.date_time.localeCompare(b.date_time));
-      });
+    const { error } = await supabase.from("available_slots").insert(newSlotsArray);
+    if (!error) {
+      await fetchSlots();
       alert(`✨ تم توليد مواعيد الشهر كاملة حسب اختيارك بنجاح! (${monthNamesEn[month]})`);
     } else {
       alert("حدث خطأ أثناء التوليد.");
