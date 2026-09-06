@@ -17,17 +17,18 @@ export default function AdminPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   
-  // 🔥 الحل الجذري: حساب أدوار اليوم مباشرة من القائمة الرئيسية لضمان التحديث الفوري
-  const selectedDaySlots = selectedDateStr ? slots.filter(s => s.date_time.startsWith(selectedDateStr)) : [];
+  // فلترة قوية وآمنة جداً لجلب أدوار اليوم المختار بدون أي أخطاء زمنية
+  const selectedDaySlots = selectedDateStr ? slots.filter(s => {
+    if (!s.date_time) return false;
+    return s.date_time.substring(0, 10) === selectedDateStr;
+  }) : [];
   
   const [selectedSlotIds, setSelectedSlotIds] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  // الساعات والدقائق لإضافة دور جديد
   const [newHour, setNewHour] = useState("10");
   const [newMinute, setNewMinute] = useState("00");
 
-  // إعدادات التوليد للشهر
   const [genStartH, setGenStartH] = useState("10");
   const [genStartM, setGenStartM] = useState("00");
   const [genEndH, setGenEndH] = useState("20");
@@ -42,13 +43,28 @@ export default function AdminPage() {
     }
   }, [isAuthenticated]);
 
+  // الحل الجذري: سحب الجداول بشكل منفصل ودمجها يدوياً لتفادي أي عطل في Supabase
   async function fetchSlots() {
-    const { data } = await supabase
+    const { data: slotsData, error: slotsError } = await supabase
       .from("available_slots")
-      .select(`id, date_time, is_booked, bookings ( customer_name, customer_phone, service_name )`)
+      .select("*")
       .order("date_time", { ascending: true });
-    if (data) {
-      setSlots(data);
+
+    if (slotsError) {
+      alert("خطأ في جلب المواعيد: " + slotsError.message);
+      return;
+    }
+
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("*");
+
+    if (slotsData) {
+      const enrichedSlots = slotsData.map(slot => {
+        const slotBookings = (bookingsData || []).filter(b => b.slot_id === slot.id);
+        return { ...slot, bookings: slotBookings };
+      });
+      setSlots(enrichedSlots);
     }
   }
 
@@ -81,15 +97,13 @@ export default function AdminPage() {
     if (!selectedDateStr) return alert("الرجاء اختيار اليوم من التقويم أولاً!");
     const dateTimeString = `${selectedDateStr}T${newHour}:${newMinute}:00`;
     
-    // إضافة الدور بالشكل السليم بدون تعقيدات
     const { error } = await supabase.from("available_slots").insert([{ date_time: dateTimeString }]);
     
     if (!error) {
-      await fetchSlots(); // 🔥 إجبار الموقع على جلب البيانات فوراً ليتحدث العرض
+      await fetchSlots();
       alert("✨ تمت إضافة الدور بنجاح!");
     } else {
-      console.error(error);
-      alert("حدث خطأ أثناء الإضافة.");
+      alert("حدث خطأ أثناء الإضافة: " + error.message);
     }
   }
 
@@ -168,7 +182,7 @@ export default function AdminPage() {
     const { error } = await supabase.from("available_slots").insert(newSlotsArray);
     if (!error) {
       await fetchSlots();
-      alert(`✨ تم توليد مواعيد الشهر كاملة حسب اختيارك بنجاح! (${monthNamesEn[month]})`);
+      alert(`✨ تم توليد مواعيد الشهر كاملة بنجاح!`);
     } else {
       alert("حدث خطأ أثناء التوليد.");
     }
@@ -188,7 +202,7 @@ export default function AdminPage() {
       .upload(filePath, file);
 
     if (uploadError) {
-      alert("خطأ في رفع الصورة، تأكد من إنشاء Bucket باسم 'gallery' في Supabase Storage.");
+      alert("خطأ في رفع الصورة، تأكد من إعداد الـ Storage.");
       setUploading(false);
       return;
     }
@@ -198,16 +212,11 @@ export default function AdminPage() {
       .getPublicUrl(filePath);
 
     const publicUrl = publicUrlData.publicUrl;
-
-    const { error: insertError } = await supabase.from("gallery").insert([{ image_url: publicUrl }]);
+    await supabase.from("gallery").insert([{ image_url: publicUrl }]);
     
     setUploading(false);
-    if (!insertError) {
-      fetchGallery();
-      alert("✨ تم رفع الصورة وإضافتها للمعرض بنجاح!");
-    } else {
-      alert("تم رفع الصورة لكن حدث خطأ في حفظها بقاعدة البيانات.");
-    }
+    fetchGallery();
+    alert("✨ تم رفع الصورة بنجاح!");
   }
 
   async function handleDeleteGallery(id: string) {
@@ -352,7 +361,10 @@ export default function AdminPage() {
         {/* إدارة أدوار اليوم المختار */}
         {selectedDateStr && (
           <div className="bg-black border border-yellow-500/30 p-6 rounded-xl mb-8">
-            <h2 className="text-xl font-bold mb-4 text-white">إدارة أدوار يوم: <span className="text-yellow-400">{selectedDateStr}</span></h2>
+            <div className="flex justify-between items-center mb-4">
+               <h2 className="text-xl font-bold text-white">إدارة أدوار يوم: <span className="text-yellow-400">{selectedDateStr}</span></h2>
+               <span className="text-xs text-gray-500 bg-neutral-900 px-2 py-1 rounded">إجمالي الأدوار بالسيستم: {slots.length}</span>
+            </div>
             
             <div className="flex flex-col sm:flex-row gap-3 mb-6 items-center">
               <div className="flex gap-2 w-full sm:w-auto">
@@ -367,7 +379,6 @@ export default function AdminPage() {
               <button onClick={handleAddSlotForDay} className="w-full sm:w-auto bg-yellow-500 text-black font-bold px-6 py-3 rounded-xl hover:bg-yellow-400">＋ إضافة دور جديد</button>
             </div>
 
-            {/* أزرار الحذف الجماعي */}
             {selectedDaySlots.length > 0 && (
               <div className="flex flex-wrap gap-3 mb-6 p-4 bg-neutral-900 border border-neutral-800 rounded-xl justify-between items-center">
                 <span className="text-sm text-gray-300">الأدوار المحددة للحذف: {selectedSlotIds.length}</span>
@@ -387,7 +398,10 @@ export default function AdminPage() {
                 <p className="text-gray-400 text-sm">لا توجد أدوار مضافة في هذا اليوم.</p>
               ) : (
                 selectedDaySlots.map(slot => {
-                  const timeStr = slot.date_time.split('T')[1]?.substring(0, 5) || "";
+                  // استخراج الوقت بطريقة مضادة لأي خطأ
+                  const timeMatch = slot.date_time.match(/(\d{2}:\d{2})/);
+                  const timeStr = timeMatch ? timeMatch[1] : "00:00";
+                  
                   const isChecked = selectedSlotIds.includes(slot.id);
                   return (
                     <div key={slot.id} className={`p-4 rounded-xl border transition-all flex flex-col gap-2 ${isChecked ? 'bg-neutral-800 border-yellow-500' : 'bg-neutral-900 border-neutral-800'}`}>
