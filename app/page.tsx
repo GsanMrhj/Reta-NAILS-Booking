@@ -97,14 +97,22 @@ export default function Home() {
         <div className="space-y-3">
           <Link 
             href="/booking" 
-            className="inline-block w-full bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black font-extrabold text-xl py-4 px-8 rounded-2xl transition-all shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:scale-[1.02]"
+            className="block w-full bg-gradient-to-r from-yellow-600 via-yellow-500 to-yellow-600 hover:from-yellow-500 hover:to-yellow-400 text-black font-extrabold text-xl py-4 px-8 rounded-2xl transition-all shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:scale-[1.02]"
           >
             🎀 احجزي دوركِ 🎀
           </Link>
           
+          {/* زر مَوْعِدي الجديد */}
+          <Link 
+            href="/my-booking" 
+            className="block w-full bg-neutral-800 hover:bg-neutral-700 text-yellow-400 border border-yellow-500/40 font-bold text-lg py-3 px-8 rounded-2xl transition-all text-center"
+          >
+            📅 مَوْعِدي (استعلام / إلغاء)
+          </Link>
+
           <Link 
             href="/services" 
-            className="inline-block w-full bg-neutral-800 hover:bg-neutral-700 text-yellow-400 border border-yellow-500/40 font-bold text-lg py-3 px-8 rounded-2xl transition-all"
+            className="block w-full bg-neutral-800 hover:bg-neutral-700 text-yellow-400 border border-yellow-500/40 font-bold text-lg py-3 px-8 rounded-2xl transition-all"
           >
             📋 قائمة الخدمات والأسعار
           </Link>
@@ -113,13 +121,12 @@ export default function Home() {
 
       {/* معرض أعمال ريتا المتحرك (Moving Gallery Carousel) */}
       <div className="relative z-10 w-full max-w-6xl mx-auto mt-8 mb-16 overflow-hidden">
-        <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8 font-serif">📸 معرض أعمال ريتا </h2>
+        <h2 className="text-3xl font-bold text-center text-yellow-400 mb-8 font-serif">📸 معرض أعمال ريتا الملكية</h2>
         {galleryImages.length === 0 ? (
           <p className="text-gray-500 text-center">قريباً سيتم رفع أحدث صور الأظافر هنا ✨</p>
         ) : (
           <div className="overflow-hidden w-full relative py-4">
             <div className="animate-marquee flex gap-6">
-              {/* نكرر الصور مرتين لضمان استمرارية الحركة بدون توقف */}
               {[...galleryImages, ...galleryImages].map((item, index) => (
                 <div key={index} className="w-72 h-80 bg-neutral-900 border border-yellow-500/30 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
                   <img src={item.image_url} alt="Nail Work" className="w-full h-full object-cover" />
@@ -142,7 +149,7 @@ export default function Home() {
           💬
         </a>
         <a 
-          href="https://instagram.com/reta.nails.1" 
+          href="https://instagram.com/retanails" 
           target="_blank" 
           rel="noopener noreferrer"
           className="w-14 h-14 bg-gradient-to-tr from-yellow-500 via-pink-600 to-purple-700 hover:opacity-90 text-white rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-110 text-2xl"
