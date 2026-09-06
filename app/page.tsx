@@ -9,7 +9,7 @@ export default function Home() {
         <div className="mb-6 flex justify-center">
           <div className="w-32 h-32 rounded-full border-2 border-yellow-500 p-1 overflow-hidden bg-black flex items-center justify-center">
             {/* تأكد إن اسم الصورة بالمجلد public هو logo.png أو عدل الامتداد هنا */}
-            <img src="/logo.png" alt="لوجو صالون ريتا" className="w-full h-full object-cover rounded-full" 
+            <img src="/logo.jpg" alt="لوجو صالون ريتا" className="w-full h-full object-cover rounded-full" 
                  onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement!.innerHTML = '<span class="text-5xl">👑</span>'; }} 
             />
           </div>
