@@ -40,6 +40,14 @@ export default function BookingPage() {
   const [showWaitingListForm, setShowWaitingListForm] = useState(false);
   const [waitingNote, setWaitingNote] = useState("");
 
+  // جلب التاريخ والوقت الحقيقيين (مهم جداً للمنظومة الذكية)
+  const today = new Date();
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth();
+  const todayDate = today.getDate();
+  const currentHour = today.getHours();
+  const currentMinute = today.getMinutes();
+
   useEffect(() => {
     fetchSlots();
   }, []);
@@ -61,6 +69,9 @@ export default function BookingPage() {
 
   const monthNamesEn = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+  // هل الشهر المعروض حالياً هو أقدم من الشهر الفعلي؟ (لمنع الرجوع للماضي)
+  const isPastMonth = year < todayYear || (year === todayYear && month <= todayMonth);
+
   const handleDayClick = (day: number) => {
     const mStr = String(month + 1).padStart(2, '0');
     const dStr = String(day).padStart(2, '0');
@@ -69,7 +80,24 @@ export default function BookingPage() {
     setSelectedDateStr(dateStr);
     setSelectedSlot(null);
 
-    const daySlots = slots.filter(s => s.date_time.startsWith(dateStr) && !s.is_booked);
+    // فلترة الساعات الذكية: منع إظهار الأدوار المنتهية في نفس اليوم
+    const daySlots = slots.filter(s => {
+      if (!s.date_time.startsWith(dateStr) || s.is_booked) return false;
+      
+      if (year === todayYear && month === todayMonth && day === todayDate) {
+        const timeMatch = s.date_time.match(/T(\d{2}):(\d{2})/);
+        if (timeMatch) {
+          const slotHour = parseInt(timeMatch[1], 10);
+          const slotMinute = parseInt(timeMatch[2], 10);
+          // إذا كان الدور في الماضي بنفس اليوم، نمنعه
+          if (slotHour < currentHour || (slotHour === currentHour && slotMinute <= currentMinute)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+
     setSelectedDaySlots(daySlots);
   };
 
@@ -165,10 +193,16 @@ export default function BookingPage() {
               </select>
             </div>
 
-            {/* تقويم الشهر */}
+            {/* تقويم الشهر الذكي */}
             <div className="mb-6 bg-black p-4 rounded-2xl border border-neutral-800">
               <div className="flex justify-between items-center mb-4">
-                <button onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">‹</button>
+                {/* إخفاء زر الرجوع إذا كنا في الشهر الحالي أو أقدم */}
+                {isPastMonth ? (
+                  <div className="w-8"></div> // مسافة فارغة للحفاظ على التنسيق
+                ) : (
+                  <button onClick={() => { setCurrentDate(new Date(year, month - 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">‹</button>
+                )}
+                
                 <h2 className="text-lg font-bold text-yellow-400">{monthNamesEn[month]} {year}</h2>
                 <button onClick={() => { setCurrentDate(new Date(year, month + 1, 1)); setSelectedDateStr(null); }} className="text-yellow-400 px-3 py-1 bg-neutral-900 rounded-lg">›</button>
               </div>
@@ -186,16 +220,35 @@ export default function BookingPage() {
                   const mStr = String(month + 1).padStart(2, '0');
                   const dStr = String(day).padStart(2, '0');
                   const dFull = `${year}-${mStr}-${dStr}`;
-                  const hasSlots = slots.some(s => s.date_time.startsWith(dFull) && !s.is_booked);
+                  
+                  // فحص هل اليوم في الماضي؟
+                  const isPastDay = year < todayYear || (year === todayYear && month < todayMonth) || (year === todayYear && month === todayMonth && day < todayDate);
+                  
+                  // فحص هل يوجد أدوار باقية في هذا اليوم بعد الفلترة الزمنية؟
+                  const hasSlots = !isPastDay && slots.some(s => {
+                    if (!s.date_time.startsWith(dFull) || s.is_booked) return false;
+                    if (year === todayYear && month === todayMonth && day === todayDate) {
+                      const timeMatch = s.date_time.match(/T(\d{2}):(\d{2})/);
+                      if (timeMatch) {
+                        const slotHour = parseInt(timeMatch[1], 10);
+                        const slotMinute = parseInt(timeMatch[2], 10);
+                        return slotHour > currentHour || (slotHour === currentHour && slotMinute > currentMinute);
+                      }
+                    }
+                    return true;
+                  });
+
                   const isSelected = selectedDateStr === dFull;
 
                   return (
                     <button
                       key={day}
                       onClick={() => handleDayClick(day)}
-                      disabled={!hasSlots}
+                      disabled={isPastDay || !hasSlots}
                       className={`h-10 rounded-xl font-bold transition-all text-sm flex items-center justify-center ${
-                        isSelected 
+                        isPastDay
+                        ? "text-neutral-700 bg-black cursor-not-allowed opacity-50" // تصميم الأيام المنتهية
+                        : isSelected 
                         ? "bg-yellow-500 text-black shadow-lg scale-105" 
                         : hasSlots 
                         ? "bg-neutral-800 text-yellow-400 border border-yellow-500/30 hover:border-yellow-500" 
